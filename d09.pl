@@ -10,10 +10,7 @@ my @pzero = split(/,/, <$f>);
 
 sub mem
 {
-	my $p = shift;
-	my $rb = shift;
-	my $i = shift;
-	my $m = shift;
+	my ($p,$rb,$i,$m) = @_;
 
 	if ($m == 0) { return $p->[$p->[$i]] // 0 }
 	elsif ($m == 1) { return $p->[$i] // 0}
@@ -23,11 +20,7 @@ sub mem
 
 sub memx
 {
-	my $p = shift;
-	my $rb = shift;
-	my $i = shift;
-	my $m = shift;
-	my $v = shift;
+	my ($p,$rb,$i,$m,$v) = @_;
 
 	if ($m == 0) { $p->[$p->[$i]] = $v }
 	elsif ($m == 1) { $p->[$i] = $v } # no
@@ -37,10 +30,7 @@ sub memx
 
 sub dbg
 {
-	my $p = shift;
-	my $rb = shift;
-	my $i = shift;
-	my $m = shift;
+	my ($p,$rb,$i,$m) = @_;
 
 	if ($m == 0) { return "@".($p->[$i] // 0)}
 	elsif ($m == 1) { return $p->[$i] // 0}
@@ -134,13 +124,13 @@ sub intcode
 		}
 		elsif ($op == 7) # lt
 		{
-			print STDERR "[$i] ".join(",",@p[$i..$i+3])." :: lt ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." -> ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR "[$i] ".join(",",@p[$i..$i+3])." :: lt ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			memx($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) < mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
 		elsif ($op == 8) # eq
 		{
-			print STDERR "[$i] ".join(",",@p[$i..$i+3])." :: eq ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." -> ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR "[$i] ".join(",",@p[$i..$i+3])." :: eq ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			memx($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) == mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
