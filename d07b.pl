@@ -152,6 +152,7 @@ permute {
 			my $v = $toutput[$current];
 			if ($v > $max)
 			{
+				print "MAX: ";
 				print join("-",@_);
 				print " $v\n";
 				$max = $v;
