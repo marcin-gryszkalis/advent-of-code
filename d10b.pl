@@ -36,9 +36,6 @@ for my $r (<$f>)
 $sx--;
 $sy--;
 
-
-my $p;
-
 my $cnt = 0;
 
 # sort destinations by angle and distance to base
@@ -49,6 +46,7 @@ for my $dx (-$sx..$sx)
 	for my $dy (-$sy..$sy)
 	{
 		next if $dx == 0 && $dy == 0;
+		# https://en.wikipedia.org/wiki/Atan2 
 		my $angle = $pi - atan2($dx,$dy);
 		$at->{"$dx:$dy"} = $angle;
 	}
