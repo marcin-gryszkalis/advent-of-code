@@ -4,9 +4,12 @@ use warnings;
 use strict;
 use Data::Dumper;
 use Math::Permute::List;
+use Time::HiRes qw(usleep nanosleep);
 
 use threads;
 use Thread::Queue;
+
+$| = 1;
 
 open(my $f, "d07.txt") or die $!;
 my @pzero = split(/,/, <$f>);
@@ -24,6 +27,7 @@ sub intcode
 	my $progsrc = shift;
 	my @p = @$progsrc;
 
+	my $me = shift;
 	my $i = 0;
 
 	while (1)
@@ -40,7 +44,7 @@ sub intcode
 
 		if ($op == 9 && $opb == 9)
 		{
-			say STDERR "[$i] 99 :: halt";
+			say STDERR "[$me:$i] 99 :: halt";
 			return; # end of thread!
 		}
 		elsif ($op == 1) # add
@@ -63,7 +67,7 @@ sub intcode
 				print "no input available";
 				exit 1;
 			}
-			print STDERR "### IN($x)\n";
+			print STDERR "### $me IN($x)\n";
 
 			$p[$p[$i + 1]] = $x; # 1 for first part
 			print STDERR "[$i] ".join(",",@p[$i..$i+1])." :: inp -> @".$p[$i+1]."\n";
@@ -72,7 +76,7 @@ sub intcode
 		elsif ($op == 4) # out
 		{
 			print STDERR "[$i] ".join(",",@p[$i..$i+1])." :: out @".$p[$i+1]."\n";
-			print STDERR "### OUT(".($m1 ? $p[$i+1] :$p[$p[$i+1]]).")\n";
+			print STDERR "### $me OUT(".($m1 ? $p[$i+1] :$p[$p[$i+1]]).")\n";
 			my $output = ($m1 ? $p[$i+1] :$p[$p[$i+1]]);
 			$i += 2;
 
@@ -116,13 +120,15 @@ sub intcode
 			exit 1;
 		}
 
-		print STDERR "p[".join(",",@p)."]\n";
+#		print STDERR "p[".join(",",@p)."]\n";
 	}
 
 }
 
 my $max = 0;
 permute {
+
+	print "START PERMUTATION: ".join(",", @_)."\n";
 
 	# init threads
 	my $i = 0;
@@ -132,38 +138,58 @@ permute {
 		$tqout[$i] = Thread::Queue->new();
 
 		$tqin[$i]->enqueue($phase);
-		$thread[$i] = threads->create(\&intcode, ($tqin[$i], $tqout[$i], \@pzero));
+		$thread[$i] = threads->create(\&intcode, ($tqin[$i], $tqout[$i], \@pzero, $i));
 		$i++;
 	}
 
 	$tqin[0]->enqueue(0); # first v
 
+	my $thcount = $i;
+	my $thalive = $i;
+	my $lastoutput = undef;
 	my $current = 0;
 	while (1)
 	{
 		my $next = ($current+1) % 5;
 
-		my $v = $tqout[$current]->dequeue(); # feedback
-		$tqin[$next]->enqueue($v);
+		print STDERR "DEQ($current)\n";
+		my $v = $tqout[$current]->dequeue_nb(); # feedback
 
-		# note: we assume that 1st thread finished before we get message from last thread
-		if ($thread[$next]->is_joinable()) # next thread is already dead, finish
+		if (defined $v)
+		{
+			if ($current == $thcount-1) # last output from last thread
+			{
+				$lastoutput = $v;
+				print STDERR "*** lastoutput = $lastoutput\n"; 
+			}
+			print STDERR "ENQ($next -- $v)\n";
+			$tqin[$next]->enqueue($v);
+		}
+		else # queue is empty, maybe we'll check for dead threads? but not so frequently
 		{
 			$i = 0;
 			for my $phase (@_)
-			{
-				$thread[$i++]->join()
+			{		
+				if ($thread[$i]->is_joinable()) 
+				{
+					$thread[$i]->join();
+					$thalive--;
+				}
+				$i++;
 			}
-
-			if ($v > $max)
+						
+			if ($thalive == 0) # all dead
 			{
-				print join("-",@_);
-				print " $v\n";
-				$max = $v;
+				if ($lastoutput > $max)
+				{
+					print "MAX: ";
+					print join("-",@_);
+					print " $lastoutput\n";
+					$max = $lastoutput;
+				}
+				return; # finish permutation
 			}
-			return;
 		}
-
 		$current = $next; # next thread
 	}
 
