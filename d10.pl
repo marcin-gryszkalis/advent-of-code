@@ -42,7 +42,7 @@ for my $x (0..$sx)
 		my $o = \@zzz; # visited map
 
 		my $cnt = 0;
-		my @srx = ((reverse -$sx..-1),(0..$sx));
+		my @srx = ((reverse -$sx..-1),(0..$sx)); # -1, -2, ..., 0, 1, 2...
 		my @sry = ((reverse -$sy..-1),(0..$sy));
 		for my $dx (@srx)
 		{
@@ -67,7 +67,7 @@ for my $x (0..$sx)
 
 					print STDERR "   new at ".($x+$ddx).",".($y+$ddy)." -- ".($m->[$x+$ddx]->[$y+$ddy])."\n";
 					$o->[$x+$ddx]->[$y+$ddy] = 1; # mark visited
-					if ($found==0 && $m->[$x+$ddx]->[$y+$ddy] == 1) # first asteroid
+					if ($found == 0 && $m->[$x+$ddx]->[$y+$ddy] == 1) # first asteroid
 					{
 						print STDERR "   FOUND at ".($x+$ddx).",".($y+$ddy)."\n";
 						$found=1;

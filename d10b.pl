@@ -5,15 +5,17 @@ use strict;
 use Data::Dumper;
 
 # starting asteroid
-
 my $x = 26;
 my $y = 29;
 
-my $m;
+my $victim = 2000;
+
+my $m; # skymap
 
 my $sy = 0;
 my $sx = 0;
 
+my $anum = 0; # number of asteroids on map
 open(my $f, "d10.txt") or die $!;
 for my $r (<$f>)
 {
@@ -24,7 +26,7 @@ for my $r (<$f>)
 	for my $c (@rt)
 	{
 		$m->[$sx]->[$sy] = $c eq '#' ? 1 : 0;
-
+		$anum += $m->[$sx]->[$sy];
 		$sx++;
 	}
 
@@ -37,20 +39,14 @@ $sy--;
 
 my $p;
 
-my @zzz = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
-my $o = \@zzz; # visited map
-
-
 my $cnt = 0;
-my @srx = ((reverse -$sx..-1),(0..$sx));
-my @sry = ((reverse -$sy..-1),(0..$sy));
 
 # sort destinations by angle and distance to base
 my $pi = 3.14159265358979;
 my $at;
-for my $dx (@srx)
+for my $dx (-$sx..$sx)
 {
-	for my $dy (@sry)
+	for my $dy (-$sy..$sy)
 	{
 		next if $dx == 0 && $dy == 0;
 		my $angle = $pi - atan2($dx,$dy);
@@ -64,35 +60,48 @@ my @pt = sort {
 	return $at->{$a} <=> $at->{$b} || (abs($ax)+abs($ay) <=> abs($bx)+abs($by))
 	} keys %$at;
 
+# for my $p (@pt) { print "$p - $at->{$p}\n"; } exit;
 
-for my $p (@pt)
+while (1)
 {
-	my ($dx,$dy) = split/:/,$p;
-	next if $dx == 0 && $dy == 0;
+	say "Start a round!";
 
-	my $found = 0;
-                my $farx = $dx != 0 ? int($sx / abs($dx)) + 1 : 0;
-                my $fary = $dy != 0 ? int($sy / abs($dy)) + 1 : 0;
-                my $far = $farx > $fary ? $farx : $fary;
-                                for my $dd (1..$far) # step with given $dx,$dy
+	my @zzz = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
+	my $o = \@zzz; # visited map
+
+	for my $p (@pt)
 	{
-		my $ddx = $dx * $dd;
-		my $ddy = $dy * $dd;
-		next if $x+$ddx > $sx || $x+$ddx < 0; # out of board
-		next if $y+$ddy > $sy || $y+$ddy < 0;
+		my ($dx,$dy) = split/:/,$p;
+		next if $dx == 0 && $dy == 0;
 
-		print STDERR "   [$ddx,$ddy] -- ".($o->[$x+$ddx]->[$y+$ddy])."\n";
-		next if $o->[$x+$ddx]->[$y+$ddy] == 1; # visited
-
-		print STDERR "   new at ".($x+$ddx).",".($y+$ddy)." -- ".($m->[$x+$ddx]->[$y+$ddy])."\n";
-		$o->[$x+$ddx]->[$y+$ddy] = 1; # mark visited
-		if ($found==0 && $m->[$x+$ddx]->[$y+$ddy] == 1) # first asteroid
+		my $found = 0;
+	    my $farx = $dx != 0 ? int($sx / abs($dx)) + 1 : 0;
+	    my $fary = $dy != 0 ? int($sy / abs($dy)) + 1 : 0;
+	    my $far = $farx > $fary ? $farx : $fary;
+	    for my $dd (1..$far) # step with given $dx,$dy
 		{
-			$found=1;
-			$cnt++;
-			print "FOUND $cnt victim at ".($x+$ddx).",".($y+$ddy)."\n";
-			exit if $cnt == 200;
+			my $ddx = $dx * $dd;
+			my $ddy = $dy * $dd;
+			next if $x+$ddx > $sx || $x+$ddx < 0; # out of board
+			next if $y+$ddy > $sy || $y+$ddy < 0;
+
+			print STDERR "   [$x + $ddx,$y + $ddy] = [".($x+$ddx).",".($y+$ddy)."] -- ".($o->[$x+$ddx]->[$y+$ddy])."\n";
+			next if $o->[$x+$ddx]->[$y+$ddy] == 1; # visited
+
+			print STDERR "   new at ".($x+$ddx).",".($y+$ddy)." -- ".($m->[$x+$ddx]->[$y+$ddy])."\n";
+			$o->[$x+$ddx]->[$y+$ddy] = 1; # mark visited
+			if ($found == 0 && $m->[$x+$ddx]->[$y+$ddy] == 1) # first asteroid
+			{
+				$found=1;
+				$cnt++;
+				$m->[$x+$ddx]->[$y+$ddy] = 0; # remove from map
+				$anum--;
+				
+				print "FOUND $cnt victim at ".($x+$ddx).",".($y+$ddy).", $anum left\n";
+				exit if $cnt == $victim;
+
+				die "all asteroids killed" if $anum == 1; # 1 = base
+			}
 		}
 	}
 }
-
