@@ -59,7 +59,7 @@ sub intcode
 			}
 			print STDERR "### IN($x)\n";
 
-			$p[$p[$i + 1]] = $x; # 1 for first part
+			$p[$p[$i + 1]] = $x;
 			print STDERR "[$i] ".join(",",@p[$i..$i+1])." :: inp -> @".$p[$i+1]."\n";
 			$i += 2
 		}

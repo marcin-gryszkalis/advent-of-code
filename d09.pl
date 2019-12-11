@@ -95,7 +95,7 @@ sub intcode
 			}
 			print STDERR "### IN($x)\n";
 
-			mem($p,$rb,$i+3,$m3,$x);
+			mem($p,$rb,$i+1,$m1,$x);
 			print STDERR dbghdr($p,$i,1)." inp -> ".dbg($p,$rb,$i+1,$m1)."\n";
 			$i += 2
 		}
