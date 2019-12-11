@@ -69,7 +69,7 @@ sub intcode
 			}
 			print STDERR "### $me IN($x)\n";
 
-			$p[$p[$i + 1]] = $x; # 1 for first part
+			$p[$p[$i + 1]] = $x;
 			print STDERR "[$i] ".join(",",@p[$i..$i+1])." :: inp -> @".$p[$i+1]."\n";
 			$i += 2
 		}
@@ -160,7 +160,7 @@ permute {
 			if ($current == $thcount-1) # last output from last thread
 			{
 				$lastoutput = $v;
-				print STDERR "*** lastoutput = $lastoutput\n"; 
+				print STDERR "*** lastoutput = $lastoutput\n";
 			}
 			print STDERR "ENQ($next -- $v)\n";
 			$tqin[$next]->enqueue($v);
@@ -169,15 +169,15 @@ permute {
 		{
 			$i = 0;
 			for my $phase (@_)
-			{		
-				if ($thread[$i]->is_joinable()) 
+			{
+				if ($thread[$i]->is_joinable())
 				{
 					$thread[$i]->join();
 					$thalive--;
 				}
 				$i++;
 			}
-						
+
 			if ($thalive == 0) # all dead
 			{
 				if ($lastoutput > $max)
