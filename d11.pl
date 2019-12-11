@@ -49,9 +49,9 @@ sub dbg
 
 sub dbghdr
 {
-	my ($p,$i,$l) = @_;
+	my ($me,$p,$i,$l) = @_;
 	my @pp = @$p[$i..$i+$l];
-	return sprintf "[$i] %-20s |", join(",",@pp);
+	return sprintf "[$me:$i] %-20s |", join(",",@pp);
 }
 
 sub intcode
@@ -83,19 +83,19 @@ sub intcode
 
 		if ($op == 9 && defined $opb && $opb == 9)
 		{
-			print STDERR dbghdr($p,$i,0)." halt\n";
+			print STDERR dbghdr($me,$p,$i,0)." halt\n";
 			return; # end of thread!
 		}
 		elsif ($op == 1) # add
 		{
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) + mem($p,$rb,$i+2,$m2));
-			print STDERR dbghdr($p,$i,3)." add ".dbg($p,$rb,$i+1,$m1)." + ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR dbghdr($me,$p,$i,3)." add ".dbg($p,$rb,$i+1,$m1)." + ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			$i += 4
 		}
 		elsif ($op == 2) # mul
 		{
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) * mem($p,$rb,$i+2,$m2));
-			print STDERR dbghdr($p,$i,3)." mul ".dbg($p,$rb,$i+1,$m1)." * ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR dbghdr($me,$p,$i,3)." mul ".dbg($p,$rb,$i+1,$m1)." * ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			$i += 4
 		}
 		elsif ($op == 3) # in
@@ -109,12 +109,12 @@ sub intcode
 			print STDERR "### IN($x)\n";
 
 			mem($p,$rb,$i+1,$m1,$x);
-			print STDERR dbghdr($p,$i,1)." inp -> ".dbg($p,$rb,$i+1,$m1)."\n";
+			print STDERR dbghdr($me,$p,$i,1)." inp -> ".dbg($p,$rb,$i+1,$m1)."\n";
 			$i += 2
 		}
 		elsif ($op == 4) # out
 		{
-			print STDERR dbghdr($p,$i,1)." out ".dbg($p,$rb,$i+1,$m1)."\n";
+			print STDERR dbghdr($me,$p,$i,1)." out ".dbg($p,$rb,$i+1,$m1)."\n";
 			my $output = mem($p,$rb,$i+1,$m1);
 			print STDERR "### OUT($output)\n";
 
@@ -123,7 +123,7 @@ sub intcode
 		}
 		elsif ($op == 5) # jnz
 		{
-			print STDERR dbghdr($p,$i,2)." jnz ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
+			print STDERR dbghdr($me,$p,$i,2)." jnz ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
 			if (mem($p,$rb,$i+1,$m1) != 0)
 			{
 				$i = mem($p,$rb,$i+2,$m2)
@@ -133,7 +133,7 @@ sub intcode
 		}
 		elsif ($op == 6) # jz
 		{
-			print STDERR dbghdr($p,$i,2)." jz  ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
+			print STDERR dbghdr($me,$p,$i,2)." jz  ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
 			if (mem($p,$rb,$i+1,$m1) == 0)
 			{
 				$i = mem($p,$rb,$i+2,$m2)
@@ -143,25 +143,25 @@ sub intcode
 		}
 		elsif ($op == 7) # lt
 		{
-			print STDERR dbghdr($p,$i,3)." lt  ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR dbghdr($me,$p,$i,3)." lt  ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) < mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
 		elsif ($op == 8) # eq
 		{
-			print STDERR dbghdr($p,$i,3)." eq  ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print STDERR dbghdr($me,$p,$i,3)." eq  ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) == mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
 		elsif ($op == 9) # arb
 		{
 			$rb += mem($p,$rb,$i+1,$m1);
-			print STDERR dbghdr($p,$i,2)." arb by ".dbg($p,$rb,$i+1,$m1)." rb:$rb\n";
+			print STDERR dbghdr($me,$p,$i,2)." arb by ".dbg($p,$rb,$i+1,$m1)." rb:$rb\n";
 			$i += 2;
 		}
 		else
 		{
-			print STDERR dbghdr($p,$i,1)." err invalid opcode: $op\n";
+			print STDERR dbghdr($me,$p,$i,1)." err invalid opcode: $op\n";
 			exit 1;
 		}
 
