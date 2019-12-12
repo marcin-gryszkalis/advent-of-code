@@ -61,11 +61,9 @@ for my $it (1..$iterations)
 	print "After $it steps:\n";
 	for my $i (0..$mn-1)
 	{
-		print "pos=<";
-		print join(",", map { sprintf("%s=%3d", $axlab[$_], $mp->[$i]->[$_]) } (0..2));
-		print ", vel=<";
-		print join(",", map { sprintf("%s=%3d", $axlab[$_], $mv->[$i]->[$_]) } (0..2));
-		print ">\n";
+		printf "pos=<%s>, vel=<%s>\n",
+			join(", ", map { sprintf("%s=%3d", $axlab[$_], $mp->[$i]->[$_]) } (0..2)),
+			join(", ", map { sprintf("%s=%3d", $axlab[$_], $mv->[$i]->[$_]) } (0..2));
 	}
 
 
