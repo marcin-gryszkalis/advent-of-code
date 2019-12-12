@@ -24,13 +24,7 @@ while (<$f>)
 	$mn++;
 }
 
-for my $i (0..$mn-1)
-{
-	for my $j (0..2)
-	{
-		$mv->[$i]->[$j] = 0;
-	}
-}
+$mv = [ map { [qw/0 0 0/] } (0..($mn-1)) ];
 
 for my $it (1..$iterations)
 {
@@ -51,7 +45,7 @@ for my $it (1..$iterations)
 			for my $a (0..2)
 			{
 				next if $mp->[$m1]->[$a] == $mp->[$m2]->[$a];
-				$mv->[$m1]->[$a] += ($mp->[$m1]->[$a] < $mp->[$m2]->[$a] ? 1 : -1);
+				$mv->[$m1]->[$a] += ($mp->[$m2]->[$a] <=> $mp->[$m1]->[$a]);
 			}
 		}
 	}
@@ -64,20 +58,14 @@ for my $it (1..$iterations)
 		}
 	}
 
-	next unless $iterations <20 || $it%($iterations/10) == 1; # show only 10 steps for longer jobs
+	next unless $iterations < 20 || $it % ($iterations/10) == 1; # show only 10 steps for longer jobs
 	print "After $it steps:\n";
 	for my $i (0..$mn-1)
 	{
 		print "pos=<";
-		for my $j (0..2)
-		{
-			printf("%s=%3d%s", $axlab[$j], $mp->[$i]->[$j], $j<2?",":"");
-		}
+		print join(",", map { sprintf("%s=%3d", $axlab[$_], $mp->[$i]->[$_]) } (0..2));
 		print ", vel=<";
-		for my $j (0..2)
-		{
-			printf("%s=%3d%s", $axlab[$j], $mv->[$i]->[$j], $j<2?",":"");
-		}
+		print join(",", map { sprintf("%s=%3d", $axlab[$_], $mv->[$i]->[$_]) } (0..2));
 		print ">\n";
 	}
 
@@ -113,13 +101,11 @@ for my $m1 (0..$mn-1)
 		L: for my $l (1..int($iterations/2)-1)
 		{
 			my $x = 0;
-			my $y = 0+$l;
 			for my $i (0..$l-1)
 			{
 				# print "cmp $mc->[$m1]->[$a]->[$x] != $mc->[$m1]->[$a]->[$y]\n";
-				next L if ($mc->[$m1]->[$a]->[$x] != $mc->[$m1]->[$a]->[$y]); # not a cycle
+				next L if ($mc->[$m1]->[$a]->[$x] != $mc->[$m1]->[$a]->[$x+$l]); # not a cycle
 				$x++;
-				$y++;
 			}
 
 			print "$m1 $axlab[$a]: cycle $l\n";
