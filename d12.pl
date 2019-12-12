@@ -17,11 +17,7 @@ my $mn = 0; # number of moons
 open(my $f, "d12.txt") or die $!;
 while (<$f>)
 {
-	die unless /<x=(.*), y=(.*), z=(.*)>/;
-	$mp->[$mn]->[0] = $1;
-	$mp->[$mn]->[1] = $2;
-	$mp->[$mn]->[2] = $3;
-	$mn++;
+	$mp->[$mn++] = [ /<x=(.*), y=(.*), z=(.*)>/ ];
 }
 
 $mv = [ map { [qw/0 0 0/] } (0..($mn-1)) ];
