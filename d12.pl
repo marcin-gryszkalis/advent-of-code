@@ -40,11 +40,10 @@ for my $it (1..$iterations)
 	{
 		for my $m2 (0..$mn-1)
 		{
-			next if $m1 == $m2;
+			next if $m1 == $m2; # not required but saves time
 
 			for my $a (0..2)
 			{
-				next if $mp->[$m1]->[$a] == $mp->[$m2]->[$a];
 				$mv->[$m1]->[$a] += ($mp->[$m2]->[$a] <=> $mp->[$m1]->[$a]);
 			}
 		}
