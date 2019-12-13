@@ -193,22 +193,16 @@ while (1)
 		my $y = $tqout[$i]->dequeue(); # assume we'll have 3 pieces of output
 		my $o = $tqout[$i]->dequeue();
 
-		if ($x == -1 && $y == 0)
-		{
-			print "$mv %%%%%% SCORE($o)\n";
-		}
-		else
-		{
-			# print "$mv ****** DO($x,$y = $o)\n";
+		# print "$mv ****** DO($x,$y = $o)\n";
 
-			$m->[$x]->[$y] = $o;
-			if ($x > $sx || $x < 0 || $y > $sy || $y < 0) { die "out of board"; }
+		$m->[$x]->[$y] = $o;
+		if ($x > $sx || $x < 0 || $y > $sy || $y < 0) { die "out of board"; }
 
-			if ($o == 3) # padd
-			{
-				$px = $x;
-			}
+		if ($o == 3) # padd
+		{
+			$px = $x;
 		}
+
 		$mv++;
 	}
 	else # queue is empty, maybe we'll check for dead threads?
