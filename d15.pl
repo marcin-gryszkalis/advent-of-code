@@ -177,8 +177,8 @@ my @dmap = qw/^ > v </;
 
 my @dirtocmd = (1,4,2,3); # north (1), south (2), west (3), and east (4),
 
-my $sx = 48; # board size
-my $sy = 48;
+my $sx = 44; # board size
+my $sy = 44;
 
 my @zm = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
 my $m = \@zm; # map
@@ -229,15 +229,6 @@ sub move
 	return $status;
 }
 
-sub movex
-{
-	my $d = shift;
-#	print "MOVE ($x,$y) $dmap[$d]";
-	my $st = move($d);
-#	print " = $st\n";
-	return $st;
-}
-
 sub check
 {
 	my $d = shift;
@@ -247,7 +238,7 @@ sub check
 	my $st = move($d);
 	if ($st > 0)
 	{
-		move(($d + 2)%4); # move back
+		move(($d + 2) % 4); # move back
 	}
 	return $st;
 }
@@ -310,7 +301,7 @@ while (1)
 			$step--;
 		}
 
-		my $st = movex($d);
+		my $st = move($d);
 
 		draw();
 
@@ -332,7 +323,7 @@ while (1)
 @zv = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
 $v = \@zv; # visited
 
-# it's alrady there:
+# it's already there:
 # my $x = $ox;
 # my $y = $oy;
 
@@ -378,7 +369,7 @@ while (1)
 			$step--;
 		}
 
-		my $st = movex($d);
+		my $st = move($d);
 
 		if ($step > $maxstep)
 		{
