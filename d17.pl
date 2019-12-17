@@ -3,19 +3,17 @@ use 5.28.0;
 use warnings;
 use strict;
 use Data::Dumper;
-use Math::Permute::List;
+use Algorithm::Combinatorics qw(combinations);
 
 use threads;
 use Thread::Queue;
 
-# threads
+### intcode ######################################
 my @thread;
 my @tqin; # input msg queue
 my @tqout; # output msg queue
 
-open(my $f, "d17.txt") or die $!;
-my @pzero = split(/,/, <$f>);
-
+open(my $dbgf,">intcode-debug.txt") or die $!;
 sub mem
 {
 	my ($p,$rb,$i,$m,$v) = @_;
@@ -66,7 +64,7 @@ sub intcode
 
 	my $rb = 0;
 
-	print STDERR "[$me:0] START\n";
+	print $dbgf "[$me:0] START\n";
 	while (1)
 	{
 		die unless defined $p[$i];
@@ -81,19 +79,19 @@ sub intcode
 
 		if ($op == 9 && defined $opb && $opb == 9)
 		{
-			print STDERR dbghdr($me,$p,$i,0)." halt\n";
+			print $dbgf dbghdr($me,$p,$i,0)." halt\n";
 			return; # end of thread!
 		}
 		elsif ($op == 1) # add
 		{
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) + mem($p,$rb,$i+2,$m2));
-			print STDERR dbghdr($me,$p,$i,3)." add ".dbg($p,$rb,$i+1,$m1)." + ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print $dbgf dbghdr($me,$p,$i,3)." add ".dbg($p,$rb,$i+1,$m1)." + ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			$i += 4
 		}
 		elsif ($op == 2) # mul
 		{
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) * mem($p,$rb,$i+2,$m2));
-			print STDERR dbghdr($me,$p,$i,3)." mul ".dbg($p,$rb,$i+1,$m1)." * ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print $dbgf dbghdr($me,$p,$i,3)." mul ".dbg($p,$rb,$i+1,$m1)." * ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			$i += 4
 		}
 		elsif ($op == 3) # in
@@ -104,24 +102,24 @@ sub intcode
 				print "no input available";
 				exit 1;
 			}
-			print STDERR "### IN($x)\n";
+			print $dbgf "### IN($x)\n";
 
 			mem($p,$rb,$i+1,$m1,$x);
-			print STDERR dbghdr($me,$p,$i,1)." inp -> ".dbg($p,$rb,$i+1,$m1)."\n";
+			print $dbgf dbghdr($me,$p,$i,1)." inp -> ".dbg($p,$rb,$i+1,$m1)."\n";
 			$i += 2
 		}
 		elsif ($op == 4) # out
 		{
-			print STDERR dbghdr($me,$p,$i,1)." out ".dbg($p,$rb,$i+1,$m1)."\n";
+			print $dbgf dbghdr($me,$p,$i,1)." out ".dbg($p,$rb,$i+1,$m1)."\n";
 			my $output = mem($p,$rb,$i+1,$m1);
-			print STDERR "### OUT($output)\n";
+			print $dbgf "### OUT($output)\n";
 
 			$qout->enqueue($output);
 			$i += 2
 		}
 		elsif ($op == 5) # jnz
 		{
-			print STDERR dbghdr($me,$p,$i,2)." jnz ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
+			print $dbgf dbghdr($me,$p,$i,2)." jnz ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
 			if (mem($p,$rb,$i+1,$m1) != 0)
 			{
 				$i = mem($p,$rb,$i+2,$m2)
@@ -131,7 +129,7 @@ sub intcode
 		}
 		elsif ($op == 6) # jz
 		{
-			print STDERR dbghdr($me,$p,$i,2)." jz  ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
+			print $dbgf dbghdr($me,$p,$i,2)." jz  ".dbg($p,$rb,$i+1,$m1)." -> ".dbg($p,$rb,$i+2,$m2)."\n";
 			if (mem($p,$rb,$i+1,$m1) == 0)
 			{
 				$i = mem($p,$rb,$i+2,$m2)
@@ -141,31 +139,36 @@ sub intcode
 		}
 		elsif ($op == 7) # lt
 		{
-			print STDERR dbghdr($me,$p,$i,3)." lt  ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print $dbgf dbghdr($me,$p,$i,3)." lt  ".dbg($p,$rb,$i+1,$m1)." < ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) < mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
 		elsif ($op == 8) # eq
 		{
-			print STDERR dbghdr($me,$p,$i,3)." eq  ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
+			print $dbgf dbghdr($me,$p,$i,3)." eq  ".dbg($p,$rb,$i+1,$m1)." == ".dbg($p,$rb,$i+2,$m2)." => ".dbg($p,$rb,$i+3,$m3)."\n";
 			mem($p,$rb,$i+3,$m3,mem($p,$rb,$i+1,$m1) == mem($p,$rb,$i+2,$m2) ? 1 : 0);
 			$i += 4;
 		}
 		elsif ($op == 9) # arb
 		{
 			$rb += mem($p,$rb,$i+1,$m1);
-			print STDERR dbghdr($me,$p,$i,2)." arb by ".dbg($p,$rb,$i+1,$m1)." rb:$rb\n";
+			print $dbgf dbghdr($me,$p,$i,2)." arb by ".dbg($p,$rb,$i+1,$m1)." rb:$rb\n";
 			$i += 2;
 		}
 		else
 		{
-			print STDERR dbghdr($me,$p,$i,1)." err invalid opcode: $op\n";
+			print $dbgf dbghdr($me,$p,$i,1)." err invalid opcode: $op\n";
 			exit 1;
 		}
 
 	}
 
 }
+
+### main #######################################
+
+open(my $f, "d17.txt") or die $!;
+my @pzero = split(/,/, <$f>);
 
 my $d = 0; # 0=top, 1=right, 2=down, 3=left
 my @dx = qw/ 0 1 0 -1/;
@@ -265,6 +268,8 @@ say "SUM($sum)";
 
 
 # part 2
+
+# map the path
 sub front
 {
 	my $nx = $x+$dx[$d];
@@ -328,24 +333,81 @@ T: while (1)
 	}
 }
 
-say "PATH: ".join(",", @q);
+my $path = join(",", @q);
+say "PATH: $path";
 
-# manually resolved :)
-# A R 12 L 6 R 12
-# B L 8 L 6 L 10
-# A R 12 L 6 R 12
-# C R 12 L 10 L 6 R 10
-# B L 8 L 6 L 10
-# C R 12 L 10 L 6 R 10
-# B L 8 L 6 L 10
-# C R 12 L 10 L 6 R 10
-# A R 12 L 6 R 12
-# C R 12 L 10 L 6 R 10
+# find best split of ABC procedures
 
-enq($tqin[$i], "A,B,A,C,B,C,B,C,A,C\n");
-enq($tqin[$i], "R,12,L,6,R,12\n");
-enq($tqin[$i], "L,8,L,6,L,10\n");
-enq($tqin[$i], "R,12,L,10,L,6,R,10\n");
+my $minl = 2; # min length of proc
+my $qparts;
+my $parts;
+my $n = $#q-1;
+while (1)
+{
+	for my $i (0..($#q-$n))
+	{
+		my $s = join(",",@q[$i..$i+$n]);
+		$qparts->{$n}->{$s}++;
+	}
+
+
+	for my $k (keys %{$qparts->{$n}})
+	{
+		$parts->{$k} = $qparts->{$n}->{$k} if $qparts->{$n}->{$k} > 1;
+	}
+
+	$n--;
+	last if $n <= $minl-2;
+}
+
+# for my $k (sort { $parts->{$b} <=> $parts->{$a} || length($b) <=> length($a) } keys %$parts)
+# {
+# 	print STDERR "$k $parts->{$k}\n";
+# }
+
+my $it = combinations([ sort { $parts->{$b} <=> $parts->{$a} || length($b) <=> length($a) } keys %$parts], 3);
+
+my @finalc = undef;
+my $finals = '';
+W: while (my $c = $it->next)
+{
+	my $t = join("|", @$c);
+	my $re = qr/^(($t),?)+$/;
+	# print "$t\n";
+	if ($path =~ m/$re/) # found right combination
+	{
+		@finalc = @$c;
+		while (1)
+		{
+			my $j = 0;
+			for my $e (@finalc)
+			{
+				if ($path =~ /^$e,?/)
+				{
+					$finals .= $j;
+					$path =~ s/$e,?//;
+					last W if length($path) == 0;
+				}
+				$j++;
+			}
+		}
+		last W;
+	}
+}
+
+$finals = join(",", map { chr(ord('A') + $_) } split//,$finals);
+say "MAIN: $finals";
+
+enq($tqin[$i], "$finals\n");
+
+my $j = 0;
+for my $e (@finalc)
+{
+	printf "PROC %s: %s\n", chr(ord('A')+$j), $e;
+	enq($tqin[$i], "$e\n");
+	$j++;
+}
+
 enq($tqin[$i], "n\n");
 
 while (1)
