@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use Data::Dumper;
 use Graph::Undirected;
+use Algorithm::Combinatorics qw(combinations);
 
 my $d = 0; # 0=top, 1=right, 2=down, 3=left
 my @dx = qw/ 0 1 0 -1/;
@@ -189,6 +190,17 @@ while (1)
 }
 
 
+my @edges = $g->edges;
+for my $e (@edges)
+{
+	my $a = shift @$e;
+	my $b = shift @$e;
+	my $w = $g->get_edge_weight($a,$b);
+	printf "%7s - %7s = %3d\n",$a,$b,$w;
+
+}
+
+
 my $modified = 1;
 while ($modified)
 {
@@ -206,24 +218,19 @@ while ($modified)
 			$modified = 1;
 			next;
 		}
-		
-		die if scalar @nbs > 4; # assert for more than 4?
-		
-		my $i = 0;
-		while ($i < $#nbs)
+
+		say "OPTIMIZE-CROSSING($v)";
+		my $it = combinations(\@nbs, 2);
+		while (my $es = $it->next)
 		{
-			$g->add_weighted_edge($nbs[$i], $nbs[$i+1], $g->get_edge_weight($nbs[$i], $v) + $g->get_edge_weight($v, $nbs[$i+1]));
-			$i++;
+			my $sumw =  $g->get_edge_weight($es->[0], $v) + $g->get_edge_weight($v, $es->[1]);
+			say "   $es->[0] --($sumw)-- $es->[1]";
+			$g->add_weighted_edge($es->[0], $es->[1], $sumw);
 		}
 		$g->delete_vertex($v);
-		say "OPTIMIZE-CROSSING($v)";
 		$modified = 1;
 	}
 }
-# maybe delete leafnodes other than keys?
-# $g->degree($v)
-
-# maybe delete all crossings
 
 my @edges = $g->edges;
 for my $e (@edges)
@@ -234,8 +241,6 @@ for my $e (@edges)
 	printf "%7s - %7s = %3d\n",$a,$b,$w;
 
 }
-# @n = $g->all_neighbours(@v)
-
 
 $mv = 0;
 my @shortestp;
@@ -249,13 +254,13 @@ sub visit
 	my $pa = shift; # path list ref
 
 	# say "visit($c)";
-	my %visited = %$vh; 
-	my @path = @$pa; 
+	my %visited = %$vh;
+	my @path = @$pa;
 
 #	print "(".join(" ", @path).") + $c\n";
 
 	my %vp1 = map { $_ => 1 } @path; # visited by path
-	my $v1 = join("/", sort grep { /[a-z]/ } keys %vp1); 
+	my $v1 = join("/", sort grep { /[a-z]/ } keys %vp1);
 
 	push(@path, $c);
 	die if scalar(@path) > 1000; # justin case
@@ -270,10 +275,10 @@ sub visit
 	return if $l > $shortest;
 # say "LEM($l)";
 
-	print "$mv CHECK: ".substr(join(" ", @path),0,100)."... = $l\r";
+	print "$mv CHECK: ".substr(join(" ", @path),0,100)."... = $l\r" if $mv % 10000 == 0;
 
 	my %vp2 = map { $_ => 1 } @path; # visited by path
-	my $v2 = join("/", sort grep { /[a-z]/ } keys %vp2); 
+	my $v2 = join("/", sort grep { /[a-z]/ } keys %vp2);
 
 	# check for loop
 	if (exists $visited{$c} && $visited{$c} eq $v2)
@@ -283,7 +288,7 @@ sub visit
 	$visited{$c} = $v2;
 
 	# check for success - count keys
-	my %fkeys = map { $_ => 1 } grep { /[a-z]/ } @path; 
+	my %fkeys = map { $_ => 1 } grep { /[a-z]/ } @path;
 	if (scalar keys %fkeys == $nok)
 	{
 		# success!
@@ -311,7 +316,8 @@ sub visit
 		return unless exists $fkeys{$k}; # no key, go back
 	}
 
-	for my $n ($g->neighbours($c))
+	my @nbs = $g->neighbours($c);
+	for my $n (sort { $g->get_edge_weight($a,$c) <=> $g->get_edge_weight($b,$c) } @nbs)
 	{
 		# say "goto $c -> $n";
 		visit($n, \%visited, \@path);
