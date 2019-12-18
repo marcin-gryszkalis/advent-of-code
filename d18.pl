@@ -102,7 +102,6 @@ while (1)
 {
 		my $e = $m->[$x]->[$y];
 
-
 		# door or key
 		if ($e =~ /[a-z]/i)
 		{
@@ -136,7 +135,7 @@ while (1)
 			$ways++ if $m->[$x]->[$y+1] ne '#';
 			if ($ways > 2)
 			{
-				my $name = "X($x,$y)";
+				my $name = "($x:$y)";
 				$g->add_weighted_edge($prev, $name, $step) unless $g->has_edge($prev, $name);
 				$ii++;
 				$prev = $name;
@@ -183,14 +182,14 @@ while (1)
 		$x += $dx[$d];
 		$y += $dy[$d];
 
-		draw();
-		print "The graph is $g\n";
+#		draw();
+#		print "The graph is $g\n";
 
 		$mv++;
 }
 
-# my $e = '@';
-my $vs;
+# maybe delete leafnodes other than keys?
+# $g->degree($v)
 
 my @edges = $g->edges;
 for my $e (@edges)
@@ -202,3 +201,90 @@ for my $e (@edges)
 
 }
 # @n = $g->all_neighbours(@v)
+
+my @shortestp;
+my $shortest = 100000;
+sub visit
+{
+	my $c = shift; # current
+	my $vh = shift; # visited hash ref
+	my $pa = shift; # path list ref
+
+	# say "visit($c)";
+	my %visited = %$vh; 
+	my @path = @$pa; 
+
+#	print "(".join(" ", @path).") + $c\n";
+
+	my %vp1 = map { $_ => 1 } @path; # visited by path
+	my $v1 = join("/", sort grep { /[a-z]/ } keys %vp1); 
+
+	push(@path, $c);
+	die if scalar(@path) > 1000; # justin case
+
+	my $ip = 0;
+	my $l = 0;
+	while ($ip < $#path)
+	{
+		$l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
+		$ip++;
+	}
+	return if $l > $shortest;
+# say "LEM($l)";
+
+	print "CHECK: ".substr(join(" ", @path),0,100)."... = $l\r";
+
+	my %vp2 = map { $_ => 1 } @path; # visited by path
+	my $v2 = join("/", sort grep { /[a-z]/ } keys %vp2); 
+
+	# check for loop
+	if (exists $visited{$c} && $visited{$c} eq $v2)
+	{
+		return; # we've been here with the same set of visited keys (not places)
+	}
+	$visited{$c} = $v2;
+
+	# check for success - count keys
+	my %fkeys = map { $_ => 1 } grep { /[a-z]/ } @path; 
+	if (scalar keys %fkeys == $nok)
+	{
+		# success!
+
+		# print "LEN: $l\n";
+		if ($l < $shortest)
+		{
+			my %seen;
+			@shortestp = grep { /[a-z]/ && !$seen{$_}++} @path;
+			$shortest = $l;
+			print "\nSHORTEST: ".join(" ", @shortestp)." = $shortest\n";
+			return;
+		}
+	}
+
+	# found key
+	if ($c =~ /[a-z]/)
+	{
+		# already added to path
+	}
+
+	if ($c =~ /[A-Z]/)
+	{
+		my $k = lc $c;
+		return unless exists $fkeys{$k}; # no key, go back
+	}
+
+	for my $n ($g->neighbours($c))
+	{
+		# say "goto $c -> $n";
+		visit($n, \%visited, \@path);
+	}
+}
+
+my @path = ();
+my %visited = ();
+#push(@path, '@');
+#$visited{'@'} = '';
+
+visit('@', \%visited, \@path);
+
+print "SHORTEST: ".join(" ", @shortestp)." = $shortest\n";
