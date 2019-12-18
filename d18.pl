@@ -188,8 +188,42 @@ while (1)
 		$mv++;
 }
 
+
+my $modified = 1;
+while ($modified)
+{
+	$modified = 0;
+
+	for my $v ($g->vertices())
+	{
+		next if $v eq '@' or $v =~ m/[a-z]/i;
+
+		my @nbs = $g->neighbours($v);
+		if (scalar @nbs == 1) # leaf node
+		{
+			$g->delete_vertex($v); # with edges I guess
+			say "OPTIMIZE-LEAF($v)";
+			$modified = 1;
+			next;
+		}
+		
+		die if scalar @nbs > 4; # assert for more than 4?
+		
+		my $i = 0;
+		while ($i < $#nbs)
+		{
+			$g->add_weighted_edge($nbs[$i], $nbs[$i+1], $g->get_edge_weight($nbs[$i], $v) + $g->get_edge_weight($v, $nbs[$i+1]));
+			$i++;
+		}
+		$g->delete_vertex($v);
+		say "OPTIMIZE-CROSSING($v)";
+		$modified = 1;
+	}
+}
 # maybe delete leafnodes other than keys?
 # $g->degree($v)
+
+# maybe delete all crossings
 
 my @edges = $g->edges;
 for my $e (@edges)
@@ -202,10 +236,14 @@ for my $e (@edges)
 }
 # @n = $g->all_neighbours(@v)
 
+
+$mv = 0;
 my @shortestp;
 my $shortest = 100000;
 sub visit
 {
+	$mv++;
+
 	my $c = shift; # current
 	my $vh = shift; # visited hash ref
 	my $pa = shift; # path list ref
@@ -232,7 +270,7 @@ sub visit
 	return if $l > $shortest;
 # say "LEM($l)";
 
-	print "CHECK: ".substr(join(" ", @path),0,100)."... = $l\r";
+	print "$mv CHECK: ".substr(join(" ", @path),0,100)."... = $l\r";
 
 	my %vp2 = map { $_ => 1 } @path; # visited by path
 	my $v2 = join("/", sort grep { /[a-z]/ } keys %vp2); 
