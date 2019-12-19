@@ -190,6 +190,10 @@ while (1)
 }
 
 
+my $ap_len;
+my $ap_required_keys;
+my $ap_doors_between;
+
 my @edges = $g->edges;
 for my $e (@edges)
 {
@@ -242,10 +246,146 @@ for my $e (@edges)
 
 }
 
+
+
+my @kvs = grep { $_ eq '@' || /[a-z]/ } $g->vertices;
+my $it = combinations(\@kvs, 2);
+while (my $es = $it->next)
+{
+	my @path = $g->SP_Dijkstra($es->[0], $es->[1]);
+	my $l = 0;
+	my $ip = 0;
+	while ($ip < $#path)
+	{
+		$l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
+		$ip++;
+	}
+
+	$ap_len->{$es->[0]}->{$es->[1]} =
+	$ap_len->{$es->[1]}->{$es->[0]} = $l;
+
+	$ap_len->{$es->[0]}->{$es->[0]} = 0; # we need that for sort later
+	$ap_len->{$es->[1]}->{$es->[1]} = 0; # we need that for sort later
+
+	my @pathx = grep { /[A-Z]/ } @path;
+	$ap_required_keys->{$es->[0]}->{$es->[1]} =
+	$ap_required_keys->{$es->[1]}->{$es->[0]} = \@pathx;
+
+	my @pathy = grep { /[a-z]/ } @path;
+	@pathy = @pathy[1..$#pathy-1]; # skip first and last
+	$ap_doors_between->{$es->[0]}->{$es->[1]} =
+	$ap_doors_between->{$es->[1]}->{$es->[0]} = \@pathy;
+}
+
+my $it = combinations(\@kvs, 2);
+while (my $es = $it->next)
+{
+	say "$es->[0] --(".($ap_len->{$es->[0]}->{$es->[1]}).")-- $es->[1], ".
+	"required: ".join(",", @{$ap_required_keys->{$es->[0]}->{$es->[1]}}).
+	", between: ".join(",", @{$ap_doors_between->{$es->[0]}->{$es->[1]}});
+}
+
+# DFS
 $mv = 0;
 my @shortestp;
 my $shortest = 100000;
 sub visit
+{
+	$mv++;
+
+	my $c = shift; # current
+	my $pa = shift; # path list ref
+#	my $fkh = shift; # found keys ref
+
+	# say "visit($c)";
+	my @path = @$pa;
+
+
+#	my %found_keys = %$fkh;
+
+	my %vp1 = map { $_ => 1 } @path; # visited by path
+#	my $v1 = join("/", sort grep { /[a-z]/ } keys %vp1);
+
+	push(@path, $c);
+#	die if scalar(@path) > 1000; # justin case
+
+	print "$mv CHECK: ".join(" ", @path)."\n"; # if $mv % 10000 == 0;
+	return if (scalar @path > $nok+1); # dupes in path, too long
+
+	my $xxp = join("",@path);
+
+	# check length
+	my $ip = 0;
+	my $l = 0;
+	while ($ip < $#path)
+	{
+		# $l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
+		$l += $ap_len->{$path[$ip]}->{$path[$ip+1]};
+		$ip++;
+	}
+	return if $l > $shortest; # too long
+
+	# check for success - count keys
+
+	if (scalar @path == $nok+1)
+	{
+		# success!
+		print "$mv GOOD: ".join(" ", @path)." = $l\n";
+
+		# print "LEN: $l\n";
+		if ($l < $shortest)
+		{
+			# my %seen;
+			# @shortestp = grep { /[a-z]/ && !$seen{$_}++} @path;
+			@shortestp = @path;
+			$shortest = $l;
+			print "\nSHORTEST: ".join(" ", @shortestp)." = $shortest\n";
+		}
+
+		return;
+	}
+
+	NN: for my $next (sort { $ap_len->{$c}->{$a} <=> $ap_len->{$c}->{$b} } @kvs)
+	{
+	#	exit;
+		next if $c eq $next; # or check vp2
+		next if $vp1{$next}; # visited
+		for my $k (@{$ap_required_keys->{$c}->{$next}})
+		{
+#			print "goto $c -> $next, required key: $k\n";# if $xxp =~ /^afb/;
+			next NN unless $vp1{lc $k};
+#			print "OK\n";
+		}
+
+		for my $vb (@{$ap_doors_between->{$c}->{$next}})
+		{
+			# next NN if $vp1{$vb}; # ?
+			push(@path, $vb) unless $vp1{$vb};
+		}
+
+		visit($next, \@path);
+	}
+}
+
+
+my @path = ();
+my %visited = ();
+visit('@', \@path);
+
+print "SHORTEST: ".join(" ", @shortestp)." = $shortest\n";
+
+
+
+
+
+
+
+exit;
+
+$mv = 0;
+my @shortestp;
+my $shortest = 100000;
+sub visit_
 {
 	$mv++;
 
