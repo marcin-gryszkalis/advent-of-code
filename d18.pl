@@ -27,6 +27,7 @@ my $m;
 
 my $x = 0;
 my $y = 0;
+my %elements = ();
 open(my $f, "d18.txt") or die $!;
 while (<$f>)
 {
@@ -41,16 +42,19 @@ while (<$f>)
 		{
 			$startx = $x;
 			$starty = $y;
+			$elements{$e} = [$x,$y];
 		}
 
 		if ($e =~ /[a-z]/)
 		{
 			$nok++;
+			$elements{$e} = [$x,$y];
 		}
 
 		if ($e =~ /[A-Z]/)
 		{
 			$nod++;
+			$elements{$e} = [$x,$y];
 		}
 
 		$x++;
@@ -58,9 +62,6 @@ while (<$f>)
 	$y++;
 }
 $sy = $y-1;
-
-my @zv = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
-my $v = \@zv; # visited
 
 sub draw
 {
@@ -84,8 +85,6 @@ say "DOORS($nod)";
 
 # create graph
 
-$x = $startx;
-$y = $starty;
 
 my $mv = 0;
 my $step = 0;
@@ -99,96 +98,50 @@ my $prev = '@'; # previously visited node
 # my $g = Graph::Simple->new ( is_directed => 0, is_weighted => 1);
 my $g = Graph::Undirected->new;
 
-while (1)
+# BFS for every pair of elements
+my @elks = sort keys %elements;
+my $it = combinations(\@elks, 2);
+PAIR: while (my $es = $it->next)
 {
+	say "search for $es->[0] -> $es->[1]";
+	# next if $g->has_edge($es->[0], $es->[1]); # already connected
+#	my %dist = (); # distance from @
+	my @bfsq = ();
+
+	my @zv = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
+	my $v = \@zv;
+
+	my ($x, $y) = @{$elements{$es->[0]}};
+	push(@bfsq, [$x,$y,0]); # parent, x, y, step
+	$v->[$x]->[$y] = 1;
+
+	while (scalar(@bfsq) > 0)
+	{
+		($x, $y, $step) = @{shift(@bfsq)};
 		my $e = $m->[$x]->[$y];
 
-		# door or key
-		if ($e =~ /[a-z]/i)
-		{
-			$fh->{$e} = 1;
+		say("$e -- ($x,$y) at $step");
 
-			$g->add_weighted_edge($prev, $e, $step) unless $g->has_edge($prev, $e);
-			$prev = $e;
-			$step = 0;
-
-			if (scalar keys %$fh == $nok+$nod) # found everything
-			{
-				last;
-			}
-		}
-		elsif ($e eq '@') # or maybe start
+		# goal is to find $es->[1]
+		if ($e eq $es->[1])
 		{
-			if ($prev ne '@')
-			{
-				$g->add_weighted_edge($prev, $e, $step) unless $g->has_edge($prev, $e);
-				$prev = '@';
-				$step = 0;
-			}
-		}
-		else # no door/key but maybe an intersection
-		{
-			# intersection
-			my $ways = 0;
-			$ways++ if $m->[$x-1]->[$y] ne '#';
-			$ways++ if $m->[$x+1]->[$y] ne '#';
-			$ways++ if $m->[$x]->[$y-1] ne '#';
-			$ways++ if $m->[$x]->[$y+1] ne '#';
-			if ($ways > 2)
-			{
-				my $name = "($x:$y)";
-				$g->add_weighted_edge($prev, $name, $step) unless $g->has_edge($prev, $name);
-				$ii++;
-				$prev = $name;
-				$step = 0;
-			}
+			$g->add_weighted_edge($es->[0], $es->[1], $step);
+			say("from $es->[0] to $e at ($x,$y) = $step");
+			next PAIR;
 		}
 
-
-		my $right = ($d + 1) % 4;
-		my $left = ($d + 3) % 4;
-		my $back = ($d + 2) % 4;
-
-#		print "POS($x,$y) C(r=$cr,f=$cf,l=$cl,b=$cb) D($dmap[$d])\n";
-		if ($m->[$x + $dx[$right]]->[$y + $dy[$right]] ne '#') # maybe turn right
+		for my $d (0..3) # we search only for direct roads
 		{
-			$d = $right;
-		}
-		elsif ($m->[$x + $dx[$d]]->[$y + $dy[$d]] ne '#') # go straight
-		{
+			next if $v->[$x + $dx[$d]]->[$y + $dy[$d]] == 1;
+			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] eq '#';
+			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] =~ /[a-z]/i && $m->[$x + $dx[$d]]->[$y + $dy[$d]] ne $es->[1];
 
-		}
-		elsif ($m->[$x + $dx[$left]]->[$y + $dy[$left]] ne '#') # turn left
-		{
-			$d = $left;
-		}
-		else # go back
-		{
-			$d = $back;
-		}
-
-
-		# move
-		if ($v->[$x + $dx[$d]]->[$y + $dy[$d]] == 0) # not visited
-		{
 			$v->[$x + $dx[$d]]->[$y + $dy[$d]] = 1;
-			$step++;
-		}
-		else # visited, backtracking
-		{
-			$v->[$x]->[$y] = 0;
-			$step--;
+			push(@bfsq, [$x + $dx[$d], $y + $dy[$d], $step+1]);
 		}
 
-		$x += $dx[$d];
-		$y += $dy[$d];
-
-#		draw();
-		print "The graph is $g\n";
-
-		$mv++;
+	}
 }
-
 
 my $ap_len;
 my $ap_required_keys = {};
@@ -313,6 +266,7 @@ while (my $es = $it->next)
 }
 
 
+# exit;
 
 # DFS
 $mv = 0;
@@ -326,7 +280,6 @@ sub visit
 	my $pa = shift; # path list ref
 	my $vh = shift; # found keys ref
 
-	say STDERR "$mv visit($c)" if $mv % 1000 == 0;
 	my @path = @$pa;
 	# my %visited = %$vh;
 
@@ -348,7 +301,7 @@ sub visit
 	my %vp2 = map { $_ => 1 } @path; # visited by path
 	my $v2 = join("", sort grep { /[a-z@]/ } keys %vp2);
 
-	printf STDERR "$mv CHECK: %s (vp1=%s vp2=%s)\n", join(" ", @path), $v1, $v2; # if $mv % 10000 == 0;
+	printf("$mv CHECK: %s (vp1=%s vp2=%s)\n", join(" ", @path), $v1, $v2) if $mv % 1000 == 0;
 	# return if (scalar @path > $nok+1); # dupes in path, too long
 
 	my $xxp = join("",@path);
