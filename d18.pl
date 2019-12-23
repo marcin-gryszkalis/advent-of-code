@@ -15,11 +15,12 @@ my @dmap = qw/^ > v </;
 my $sx = 0; # board size -1 (max x,y)
 my $sy = 0;
 
-my $startx;
-my $starty;
+my @startx;
+my @starty;
 
 my $nok = 0; # number of keys
 my $nod = 0; # number of doors
+my $nor = 0; # number of robots
 
 my %cache;
 
@@ -28,7 +29,7 @@ my $m;
 my $x = 0;
 my $y = 0;
 my %elements = ();
-open(my $f, "d18.txt") or die $!;
+open(my $f, "d18b.txt") or die $!;
 while (<$f>)
 {
 	chomp;
@@ -40,9 +41,10 @@ while (<$f>)
 
 		if ($e eq '@')
 		{
-			$startx = $x;
-			$starty = $y;
-			$elements{$e} = [$x,$y];
+			$startx[$nor] = $x;
+			$starty[$nor] = $y;
+			$elements{"${e}$nor"} = [$x,$y];
+			$nor++;
 		}
 
 		if ($e =~ /[a-z]/)
@@ -78,6 +80,7 @@ sub draw
 }
 
 draw();
+say "ROBOTS($nor)";
 say "KEYS($nok)";
 say "DOORS($nod)";
 
@@ -197,7 +200,7 @@ while ($modified)
 	}
 }
 
-my @edges = $g->edges;
+@edges = $g->edges;
 for my $e (@edges)
 {
 	my $a = shift @$e;
@@ -211,39 +214,51 @@ my @kvs = $g->vertices;
 
 
 # all pairs
-my $it = combinations(\@kvs, 2);
+$it = combinations(\@kvs, 2);
 while (my $es = $it->next)
 {
 	my @path = $g->SP_Dijkstra($es->[0], $es->[1]);
-	my $l = 0;
-	my $ip = 0;
-	my @reqks = ();
-	while ($ip < $#path)
+	if (scalar @path > 0)
 	{
-		$l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
-		push(@reqks, @{$ap_required_keys->{$path[$ip]}->{$path[$ip+1]}});
-		$ip++;
+		my $l = 0;
+		my $ip = 0;
+		my @reqks = ();
+		while ($ip < $#path)
+		{
+			$l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
+			push(@reqks, @{$ap_required_keys->{$path[$ip]}->{$path[$ip+1]}});
+			$ip++;
+		}
+
+		$ap_required_keys->{$es->[0]}->{$es->[1]} = \@reqks;
+		my @reqks2 = @reqks;
+		$ap_required_keys->{$es->[1]}->{$es->[0]} = \@reqks;
+
+		$ap_len->{$es->[0]}->{$es->[1]} =
+		$ap_len->{$es->[1]}->{$es->[0]} = $l;
+
 	}
-
-	$ap_required_keys->{$es->[0]}->{$es->[1]} = \@reqks;
-	my @reqks2 = @reqks;
-	$ap_required_keys->{$es->[1]}->{$es->[0]} = \@reqks;
-
-	$ap_len->{$es->[0]}->{$es->[1]} =
-	$ap_len->{$es->[1]}->{$es->[0]} = $l;
+	else # not reachable
+	{
+		$ap_len->{$es->[0]}->{$es->[1]} = -1;
+		$ap_len->{$es->[1]}->{$es->[0]} = -1;
+	}
 
 	$ap_len->{$es->[0]}->{$es->[0]} = 0; # we need that for sort later
 	$ap_len->{$es->[1]}->{$es->[1]} = 0;
 }
 
-my $it = combinations(\@kvs, 2);
+$it = combinations(\@kvs, 2);
 while (my $es = $it->next)
 {
-	say
-	" $es->[0] --(".($ap_len->{$es->[0]}->{$es->[1]}).")-- $es->[1], ".
-	"required: ".join(",", @{$ap_required_keys->{$es->[0]}->{$es->[1]}});
+	next unless $ap_len->{$es->[0]}->{$es->[1]}>0;
+	printf
+		" $es->[0] --(%s)-- $es->[1], required: %s\n",
+		$ap_len->{$es->[0]}->{$es->[1]},
+		join(",", @{$ap_required_keys->{$es->[0]}->{$es->[1]}});
 }
 
+# say Dumper $ap_len;
 
 # $g is not used anymore
 
@@ -253,83 +268,101 @@ sub visit
 {
 	$mv++;
 
-	my $c = shift; # current
+	my $csa = shift; # current(s)
+	my @cs = @$csa;
+
 	my $pa = shift; # path list ref
 	my @path = @$pa; # path copy
 
-	my %vp1 = map { $_ => 1 } @path; # visited by path
-	my $v1 = join("", sort grep { /[a-z@]/ } keys %vp1); # as sorted string
+	my @tnext = ();
 
-	my $v3 = "$v1:$c";
+	my %vp1 = map { $_ => 1 } @path; # visited by path
+	my $v1 = join("", sort keys %vp1); # as sorted string
+	my $c1 = join("+", @cs); # all currents
+
+	printf "$mv: visit %s with path=%s\n", $c1, $v1;
+
+	my $v3 = "$v1:$c1"; # cache key
 	if (exists $cache{$v3})
 	{
 		say STDERR "FOUND-IN-CACHE($v3) = $cache{$v3}";
 		return $cache{$v3};
 	}
 
-	push(@path, $c);
-#	die if scalar(@path) > 1000; # justin case
-
-	my %vp2 = map { $_ => 1 } @path; # visited by path
-	my $v2 = join("", sort grep { /[a-z@]/ } keys %vp2);
-
-	printf("$mv CHECK: %s (vp1=%s vp2=%s)\n", join(" ", @path), $v1, $v2) if $mv % 1000 == 0;
-	# return if (scalar @path > $nok+1); # dupes in path, too long
-
-	# check length
-	my $ip = 0;
-	my $l = 0;
-	while ($ip < $#path)
-	{
-		# $l += $g->get_edge_weight($path[$ip], $path[$ip+1]);
-		$l += $ap_len->{$path[$ip]}->{$path[$ip+1]};
-		$ip++;
-	}
-
-	my $res = 0;
-	if (scalar @path == $nok+1) # check for success - count keys
+	if (scalar(@path) == $nok + $nor) # check for success - length of path + last $c == $nok + $nor
 	{
 		# success!
-		print STDERR "$mv GOOD: ".join(" ", @path)." = $l\n";
-		$res = 0;
+		printf(STDERR "$mv GOOD: %s\n", join(" ", @path));
+		return 0;
 	}
-	else
-	{
 
-	 	my @tnext = ();
+ 	for my $ci (0..$nor-1)
+ 	{
+ 		my $c = $cs[$ci];
+
+
+		# printf("$mv CHECK[$ci]: at $c with path=%s (vp1=%s vp2=%s)\n", join("", @path), $v1, $v2);# if $mv % 1000 == 0;
+		# return if (scalar @path > $nok+1); # dupes in path, too long
+
+
 	 	my $vi = 0;
 
-		NN: for my $n (sort { $ap_len->{$a}->{$c} <=> $ap_len->{$b}->{$c} } @kvs)
+		# NN: for my $n (sort { say "$a $b $c"; $ap_len->{$a}->{$c} <=> $ap_len->{$b}->{$c} } @kvs)
+		NN: for my $n (@kvs) # try paths from $c[0..3] to $n
 	 	{
 	 		$vi++;
 
 	 		next if $c eq $n;
 
+	 		next unless exists $ap_len->{$c}->{$n}; # only reachable
+	 		next unless $ap_len->{$c}->{$n} > 0;
+
+	 		next if exists $vp1{$n}; # already in path
+
+			my @path = @$pa; # path copy
+			push(@path, $n);
+
+		#	die if scalar(@path) > 1000; # justin case
+
+			my %vp2 = map { $_ => 1 } @path; # visited by path
+			my $v2 = join("", sort keys %vp2);
+
 	  		printf STDERR "$mv:$vi [$v2] try($c -> $n) req: %s (have: %s)\n", join("", @{$ap_required_keys->{$c}->{$n}}), $v2;
-	 		for my $k (@{$ap_required_keys->{$c}->{$n}})
+	 		for my $k (@{$ap_required_keys->{$c}->{$n}}) # do we have required keys?
 	 		{
 	 			next NN unless $vp2{lc $k};
 	 		}
 
-	 		next if exists $vp2{$n}; # already in path...
-
-			my $vl = $ap_len->{$c}->{$n} + visit($n, \@path); # path with c
+	 		my @next = ();
+	 		for my $cj (0..$nor-1)
+	 		{
+	 			push(@next, $ci == $cj ? $n : $cs[$cj]); # update only one of nexts
+	 		}
+			my $vl = $ap_len->{$c}->{$n} + visit(\@next, \@path); # path with c
 			push(@tnext, $vl);
 		}
 
-		$res = min(@tnext);
-		say STDERR "TNEXT: $res = min: ".join(" ", @tnext);
 	}
 
-	say STDERR "CACHE-UPDATE: [$v2] $v3 = $res";
+	die "empty tnext?" unless scalar(@tnext) > 0;
+	my $res = min(@tnext);
+	say STDERR "TNEXT: $res = min: ".join(" ", @tnext);
+
+	say STDERR "CACHE-UPDATE: $v3 = $res";
 	$cache{$v3} = $res;
 
 	return $res;
 }
 
 
-my @path = ();
-my %visited = ();
+my @path = (); # ([] x $nor); # arxar
+my @current = ();
+for my $i (0..$nor-1)
+{
+	push(@current, '@'.$i);
+	push(@path, '@'.$i);
+}
+
 # visit('@', \@path, \%visited);
-my $ret = visit('@', \@path);
+my $ret = visit(\@current, \@path);
 print "RET: $ret\n";
