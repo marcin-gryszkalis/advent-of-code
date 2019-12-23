@@ -70,8 +70,6 @@ sub draw
 		for my $ax (0..$sx)
 		{
 			if ($ax == $x && $ay == $y) { print $dmap[$d] }
-			# elsif ($ax == $startx && $ay == $starty) { print "@" }
-			# elsif ($v->[$ax]->[$ay] == 1) { print "+" }
 			else { print $m->[$ax]->[$ay]; }
 		}
 		print "\n";
@@ -84,18 +82,12 @@ say "KEYS($nok)";
 say "DOORS($nod)";
 
 # create graph
-
-
 my $mv = 0;
 my $step = 0;
-my $shortest = 0;
 
 my $ii = 0; # intersection index
 my $fh; # hash of stuff to be found (doors and keys)
 
-my $prev = '@'; # previously visited node
-
-# my $g = Graph::Simple->new ( is_directed => 0, is_weighted => 1);
 my $g = Graph::Undirected->new;
 
 # BFS for every pair of elements
@@ -104,15 +96,14 @@ my $it = combinations(\@elks, 2);
 PAIR: while (my $es = $it->next)
 {
 	say "search for $es->[0] -> $es->[1]";
-	# next if $g->has_edge($es->[0], $es->[1]); # already connected
-#	my %dist = (); # distance from @
+
 	my @bfsq = ();
 
 	my @zv = ( map { [(0) x ($sy+1)] } (0..($sx+1))  );
 	my $v = \@zv;
 
 	my ($x, $y) = @{$elements{$es->[0]}};
-	push(@bfsq, [$x,$y,0]); # parent, x, y, step
+	push(@bfsq, [$x,$y,0]); # x, y, step
 	$v->[$x]->[$y] = 1;
 
 	while (scalar(@bfsq) > 0)
@@ -120,7 +111,7 @@ PAIR: while (my $es = $it->next)
 		($x, $y, $step) = @{shift(@bfsq)};
 		my $e = $m->[$x]->[$y];
 
-		say("$e -- ($x,$y) at $step");
+#		say("$e -- ($x,$y) at $step");
 
 		# goal is to find $es->[1]
 		if ($e eq $es->[1])
@@ -132,14 +123,13 @@ PAIR: while (my $es = $it->next)
 
 		for my $d (0..3) # we search only for direct roads
 		{
-			next if $v->[$x + $dx[$d]]->[$y + $dy[$d]] == 1;
-			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] eq '#';
-			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] =~ /[a-z]/i && $m->[$x + $dx[$d]]->[$y + $dy[$d]] ne $es->[1];
+			next if $v->[$x + $dx[$d]]->[$y + $dy[$d]] == 1; # visited
+			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] eq '#'; # wall
+			next if $m->[$x + $dx[$d]]->[$y + $dy[$d]] =~ /[a-z]/i && $m->[$x + $dx[$d]]->[$y + $dy[$d]] ne $es->[1]; # it's not the element you're looking for
 
 			$v->[$x + $dx[$d]]->[$y + $dy[$d]] = 1;
 			push(@bfsq, [$x + $dx[$d], $y + $dy[$d], $step+1]);
 		}
-
 	}
 }
 
@@ -157,10 +147,9 @@ for my $e (@edges)
 
 	$ap_required_keys->{$a}->{$b} = [];
 	$ap_required_keys->{$b}->{$a} = [];
-
 }
 
-# optimize graph (remove crossroads and doors)
+# optimize graph (remove doors)
 my $modified = 1;
 while ($modified)
 {
@@ -201,13 +190,13 @@ while ($modified)
 			my @pathy2 = @pathy1;
 			$ap_required_keys->{$es->[0]}->{$es->[1]} = \@pathy1;
 			$ap_required_keys->{$es->[1]}->{$es->[0]} = \@pathy2;
-			# print Dumper $ap_required_keys;
 		}
+
 		$g->delete_vertex($v);
 		$modified = 1;
 	}
 }
-#	say Dumper $ap_ _keys;
+
 my @edges = $g->edges;
 for my $e (@edges)
 {
@@ -218,7 +207,6 @@ for my $e (@edges)
 	printf "%7s - %7s = %3d, req: %s\n",$a,$b,$w, join("", @{$ap_required_keys->{$a}->{$b}});
 }
 
-# my @kvs = grep { /[a-z@]/ } $g->vertices;
 my @kvs = $g->vertices;
 
 
@@ -245,45 +233,29 @@ while (my $es = $it->next)
 	$ap_len->{$es->[1]}->{$es->[0]} = $l;
 
 	$ap_len->{$es->[0]}->{$es->[0]} = 0; # we need that for sort later
-	$ap_len->{$es->[1]}->{$es->[1]} = 0; # we need that for sort later
-
-	# my @pathx = grep { /[A-Z]/ } @path;
-#	$ap_required_keys->{$es->[0]}->{$es->[1]} =
-#	$ap_required_keys->{$es->[1]}->{$es->[0]} = \@pathx;
-
-	# my @pathy = grep { /[a-z]/ } @path;
-	# @pathy = @pathy[1..$#pathy-1]; # skip first and last
-	# $ap_doors_between->{$es->[0]}->{$es->[1]} =
-	# $ap_doors_between->{$es->[1]}->{$es->[0]} = \@pathy;
+	$ap_len->{$es->[1]}->{$es->[1]} = 0;
 }
 
 my $it = combinations(\@kvs, 2);
 while (my $es = $it->next)
 {
-	say " $es->[0] --(".($ap_len->{$es->[0]}->{$es->[1]}).")-- $es->[1], ".
-	"required: ".join(",", @{$ap_required_keys->{$es->[0]}->{$es->[1]}});#.
-	#", between: ".join(",", @{$ap_doors_between->{$es->[0]}->{$es->[1]}});
+	say
+	" $es->[0] --(".($ap_len->{$es->[0]}->{$es->[1]}).")-- $es->[1], ".
+	"required: ".join(",", @{$ap_required_keys->{$es->[0]}->{$es->[1]}});
 }
 
 
-# exit;
+# $g is not used anymore
 
-# DFS
+# DFS with cache
 $mv = 0;
-my @shortestp;
-my $shortest = 100000;
 sub visit
 {
 	$mv++;
 
 	my $c = shift; # current
 	my $pa = shift; # path list ref
-	my $vh = shift; # found keys ref
-
-	my @path = @$pa;
-	# my %visited = %$vh;
-
-#	my %found_keys = %$fkh;
+	my @path = @$pa; # path copy
 
 	my %vp1 = map { $_ => 1 } @path; # visited by path
 	my $v1 = join("", sort grep { /[a-z@]/ } keys %vp1); # as sorted string
@@ -304,8 +276,6 @@ sub visit
 	printf("$mv CHECK: %s (vp1=%s vp2=%s)\n", join(" ", @path), $v1, $v2) if $mv % 1000 == 0;
 	# return if (scalar @path > $nok+1); # dupes in path, too long
 
-	my $xxp = join("",@path);
-
 	# check length
 	my $ip = 0;
 	my $l = 0;
@@ -315,26 +285,12 @@ sub visit
 		$l += $ap_len->{$path[$ip]}->{$path[$ip+1]};
 		$ip++;
 	}
-	return $l if $l > $shortest; # too long
-
-	# check for success - count keys
 
 	my $res = 0;
-	if (scalar @path == $nok+1)
+	if (scalar @path == $nok+1) # check for success - count keys
 	{
 		# success!
 		print STDERR "$mv GOOD: ".join(" ", @path)." = $l\n";
-
-		# # print "LEN: $l\n";
-		# if ($l < $shortest)
-		# {
-		# 	# my %seen;
-		# 	# @shortestp = grep { /[a-z]/ && !$seen{$_}++} @path;
-		# 	@shortestp = @path;
-		# 	$shortest = $l;
-		# 	print "\nSHORTEST: ".join(" ", @shortestp)." = $shortest\n";
-		# }
-
 		$res = 0;
 	}
 	else
@@ -343,36 +299,22 @@ sub visit
 	 	my @tnext = ();
 	 	my $vi = 0;
 
-	# 	my @nbs = $g->neighbours($c);
-	#	NN: for my $n (sort { $g->get_edge_weight($a,$c) <=> $g->get_edge_weight($b,$c) } @kvs)
-
 		NN: for my $n (sort { $ap_len->{$a}->{$c} <=> $ap_len->{$b}->{$c} } @kvs)
 	 	{
 	 		$vi++;
 
 	 		next if $c eq $n;
-	#say "$c $n";
+
 	  		printf STDERR "$mv:$vi [$v2] try($c -> $n) req: %s (have: %s)\n", join("", @{$ap_required_keys->{$c}->{$n}}), $v2;
 	 		for my $k (@{$ap_required_keys->{$c}->{$n}})
 	 		{
-	# #			print "goto $c -> $next, required key: $k\n";# if $xxp =~ /^afb/;
 	 			next NN unless $vp2{lc $k};
-	# #			print "OK\n";
 	 		}
 
 	 		next if exists $vp2{$n}; # already in path...
 
 			my $vl = $ap_len->{$c}->{$n} + visit($n, \@path); # path with c
 			push(@tnext, $vl);
-
-			# if ($visited{"$v2/$c"})
-			# {
-			# 	say "already visited $v2";
-			# 	next;
-			# }
-			# $visited{$v2} = 1;
-			# # say "goto $c -> $n";
-			# visit($n, \@path, \%visited);
 		}
 
 		$res = min(@tnext);
@@ -383,7 +325,6 @@ sub visit
 	$cache{$v3} = $res;
 
 	return $res;
-
 }
 
 
@@ -392,5 +333,3 @@ my %visited = ();
 # visit('@', \@path, \%visited);
 my $ret = visit('@', \@path);
 print "RET: $ret\n";
-
-
