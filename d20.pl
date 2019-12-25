@@ -37,7 +37,6 @@ while (<$f>)
 }
 $sy = $y-1;
 
-my %portalscnt = ();
 my $portals;
 # parse rows
 for my $y (0..$sy-1)
@@ -48,8 +47,7 @@ for my $y (0..$sy-1)
 		if ($m->[$x]->[$y] =~ /[A-Z]/ && exists $m->[$x+1]->[$y] && $m->[$x+1]->[$y] =~ /[A-Z]/)
 		{
 			my $n = $m->[$x]->[$y].$m->[$x+1]->[$y];
-			$portalscnt{$n} = defined $portalscnt{$n} ? $portalscnt{$n}+1 : 0;
-			my $c = $portalscnt{$n};
+			my $c = $x == 0 || $x+1 == $sx ? 0 : 1;
 			my $n = "$n$c";
 
 			if (exists $m->[$x+2]->[$y] && $m->[$x+2]->[$y] eq '.')
@@ -76,8 +74,7 @@ for my $x (0..$sx-1)
 		if ($m->[$x]->[$y] =~ /[A-Z]/ && exists $m->[$x]->[$y+1] && $m->[$x]->[$y+1] =~ /[A-Z]/)
 		{
 			my $n = $m->[$x]->[$y].$m->[$x]->[$y+1];
-			$portalscnt{$n} = defined $portalscnt{$n} ? $portalscnt{$n}+1 : 0;
-			my $c = $portalscnt{$n};
+			my $c = $y == 0 || $y+1 == $sy ? 0 : 1;
 			my $n = "$n$c";
 
 			if (exists $m->[$x]->[$y+2] && $m->[$x]->[$y+2] eq '.')
@@ -102,10 +99,11 @@ my $step = 0;
 my $g = Graph::Undirected->new;
 
 # teleports
-for my $e (keys %portalscnt)
+for my $p (grep { /0/ } keys %$portals)
 {
-	next if $e =~ /(AA|ZZ)/;
-	$g->add_weighted_edge("${e}0", "${e}1", 1);
+	my $n = substr($p,0,2);
+	next if $n =~ /(AA|ZZ)/;
+	$g->add_weighted_edge("${n}0", "${n}1", 1);
 }
 
 # reverse map
