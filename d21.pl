@@ -173,19 +173,6 @@ sub intcode
 open(my $f, "d21.txt") or die $!;
 my @pzero = split(/,/, <$f>);
 
-# my $d = 0; # 0=top, 1=right, 2=down, 3=left
-# my @dx = qw/ 0 1 0 -1/;
-# my @dy = qw/-1 0 1  0/;
-# my @dmap = qw/^ > v </;
-
-# my $basesize = 70; # map background size
-# my @zm = ( map { [(0) x ($basesize)] } (0..($basesize))  );
-# my $m = \@zm; # map
-# my @zv = ( map { [(0) x ($basesize)] } (0..($basesize))  );
-# my $v = \@zv; # visited
-
-#  $pzero[0] = 2; # part 2 (does part 1 too)
-
 my $i = 0; # 1 robot
 my $thalive = 1;
 $tqin[$i] = Thread::Queue->new();
@@ -208,14 +195,6 @@ sub enq
 	}
 }
 
-# my $offset = 1; # becuase I don't want to worry walking out of board
-# my $x = 0;
-# my $y = 0;
-# my $sx = 0; # board size
-# my $sy = 0;
-# my $rx = 0; # robot
-# my $ry = 0;
-
 my $started = 0;
 while (1)
 {
@@ -230,8 +209,6 @@ while (1)
 		}
 
 		print chr($e);
-#		last unless chr($e) =~ /[.#^\n]/; # something else than map
-
 
 		if ($e == 10 && !$started)
 		{
@@ -282,6 +259,4 @@ EOF
 		}
 	}
 }
-
-
 
