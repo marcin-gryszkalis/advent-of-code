@@ -197,7 +197,9 @@ sub enq
 	my ($q,$s) = @_;
 	for my $a (split/[\r\n]+/, $s)
 	{
-		$a =~ s/\s*#.*//; # comments
+		$a =~ s/\s*#.*//; # trailing space + comments
+		next if $a eq '';
+
 		for my $b (split//,$a)
 		{
 			$q->enqueue(ord($b));
@@ -238,10 +240,28 @@ while (1)
 NOT B J 	# J = !B
 NOT C T 	# T = !C
 OR T J 		# J = (!B | !C)
+AND D J 	# J = (!B | !C) & D
+NOT A T 	# T = !A
+OR T J 		# J = ((!B | !C) & D) | !A
+WALK
+EOF
+
+			# part 2
+			my $springcode = <<'EOF';
+NOT B J 	# J = !B
+NOT C T 	# T = !C
+OR T J 		# J = (!B | !C)
 AND D J 	# J = (!B & !C) & D
+
+NOT E T 	# T = !E
+NOT T T 	# T = E
+OR H T 		# T = E | H
+
+AND T J 	# J = (!B & !C) & D & (E | H)
+
 NOT A T 	# T = !A
 OR T J 		# J = ((!B & !C) & D) | A
-WALK
+RUN
 EOF
 
 			enq($tqin[$i], $springcode);
