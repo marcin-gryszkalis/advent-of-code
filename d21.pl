@@ -218,13 +218,16 @@ NOT B J 	# J = !B
 NOT C T 	# T = !C
 OR T J 		# J = (!B | !C)
 AND D J 	# J = (!B | !C) & D
+
 NOT A T 	# T = !A
+
 OR T J 		# J = ((!B | !C) & D) | !A
+
 WALK
 EOF
 
 			# part 2
-			my $springcode = <<'EOF';
+			$springcode = <<'EOF';
 NOT B J 	# J = !B
 NOT C T 	# T = !C
 OR T J 		# J = (!B | !C)
@@ -238,6 +241,7 @@ AND T J 	# J = (!B & !C) & D & (E | H)
 
 NOT A T 	# T = !A
 OR T J 		# J = ((!B & !C) & D) | A
+
 RUN
 EOF
 
