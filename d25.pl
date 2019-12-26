@@ -195,7 +195,56 @@ sub enq
 	}
 }
 
-my $started = 0;
+my $mt = <<'EOF';
+west
+north
+take dark matter
+south
+east
+north
+west
+take planetoid
+west
+take spool of cat6
+east
+east
+south
+east
+north
+take sand
+west
+take coin
+north
+take jam
+south
+west
+south
+take wreath
+west
+take fuel cell
+east
+north
+north
+west
+south
+inv
+EOF
+
+my $it = <<'EOF';
+jam
+fuel cell
+planetoid
+sand
+spool of cat6
+coin
+dark matter
+wreath
+EOF
+
+my @manual = split/\n/,$mt;
+my @inv = split/\n/,$it;
+
+my $heavy = -1;
 my $s = '';
 while (1)
 {
@@ -212,10 +261,24 @@ while (1)
 		{
 			say $s;
 
+			$s =~ /Droids on this ship are (\S+) than the detected/;
+			if (defined $1)
+			{
+				$heavy = $1 eq 'lighter' ? 0 : 1;
+			}
+
 			if ($s =~ /Command\?/)
 			{
-#				my $in = <STDIN>;
-#				chomp $in;
+				my $in = shift(@manual);
+				if (defined $in)
+				{
+					print $in;
+				}
+				else
+				{
+					$in = <STDIN>;
+				}
+				chomp $in;
 				enq($tqin[$i], $in);
 			}
 
