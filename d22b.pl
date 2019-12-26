@@ -5,14 +5,14 @@ use strict;
 use Data::Dumper;
 
 my @commands = ();
-open(my $f, "d22x.txt") or die $!;
+open(my $f, "d22.txt") or die $!;
 while (<$f>)
 {
 	chomp;
 	push(@commands, $_);
 }
 
-my $size = 10; #007;
+my $size = 10007;
 # $size = 119315717514047;
 my $rep = 101741582076661;
 
@@ -37,7 +37,7 @@ sub invmod
 	return $t;
 }
 
-my $p = 0; # 9 for d22x.txt example, Result: 9 2 5 8 1 4 7 0 3 6
+my $p = 4485;
 for my $c (reverse @commands)
 {
 	say $c;
