@@ -230,7 +230,7 @@ south
 inv
 EOF
 
-my $it = <<'EOF';
+my $invt = <<'EOF';
 jam
 fuel cell
 planetoid
@@ -241,8 +241,37 @@ dark matter
 wreath
 EOF
 
+
+
 my @manual = split/\n/,$mt;
-my @inv = split/\n/,$it;
+my @inv = split/\n/,$invt;
+
+my @checklist = ();
+my @combscenario = ();
+
+for my $e (@inv) # drop everything
+{
+	push(@combscenario, "drop $e");
+}
+
+for my $i (1..scalar(@inv))
+{
+	my $it = combinations(\@inv, $i);
+	C: while (my $es = $it->next)
+	{
+		for my $e (@$es)
+		{
+			push(@combscenario, "take $e");
+		}
+
+		push(@combscenario, "south");
+
+		for my $e (@$es)
+		{
+			push(@combscenario, "drop $e");
+		}
+	}
+}
 
 my $heavy = -1;
 my $s = '';
@@ -261,10 +290,10 @@ while (1)
 		{
 			say $s;
 
-			$s =~ /Droids on this ship are (\S+) than the detected/;
-			if (defined $1)
+			if ($s =~ /Droids on this ship are (\S+) than the detected/)
 			{
 				$heavy = $1 eq 'lighter' ? 0 : 1;
+				say "HEAVY? $heavy";
 			}
 
 			if ($s =~ /Command\?/)
@@ -276,7 +305,11 @@ while (1)
 				}
 				else
 				{
-					$in = <STDIN>;
+					$in = shift(@combscenario);
+					say "### auto: $in";
+
+					# $in = <STDIN>;
+
 				}
 				chomp $in;
 				enq($tqin[$i], $in);
