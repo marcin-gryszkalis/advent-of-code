@@ -7,7 +7,11 @@ use Algorithm::Combinatorics qw(combinations);
 use IO::Handle;
 
 use threads;
+use threads::shared;
 use Thread::Queue;
+
+my $idle :shared = 0;
+my @idlef :shared = ();
 
 ### intcode ######################################
 my @thread;
@@ -99,11 +103,24 @@ sub intcode
 		}
 		elsif ($op == 3) # in
 		{
-			my $x = $qin->dequeue(); # blocking
+			my $x = $qin->dequeue_timed(1);
 			if (!defined $x)
 			{
-				print "no input available";
-				exit 1;
+				# print "no input available";
+				# exit 1;
+				{
+					lock($idle);
+					$idlef[$me] = 1;
+					say "IDLE($me)" if $me == 0;
+				}
+				$x = -1;
+			}
+			else
+			{
+				{
+					lock($idle);
+					$idlef[$me] = 0;
+				}
 			}
 			print $dbgf "### IN($x)\n";
 
@@ -178,38 +195,82 @@ my $thalive = $nodes;
 for my $i (0..$nodes-1)
 {
 	$tqin[$i] = Thread::Queue->new();
+	$tqin[$i]->enqueue($i);
+
 	$tqout[$i] = Thread::Queue->new();
 	$thread[$i] = threads->create(\&intcode, ($i, $tqin[$i], $tqout[$i], \@pzero));
 
-	$tqin[$i]->enqueue($i);
-	$tqin[$i]->enqueue(-1);
 }
 
 my $started = 0;
 my $loop = 0;
+
+my $natx = 0;
+my $naty = 0;
+my $pnatx = 0; # prev
+my $pnaty = 0;
+my $partone = 0;
 MAIN: while (1)
 {
 	$loop++;
 
+	my $activity = 0;
+#	sleep(1);
 	for my $i (0..$nodes-1)
 	{
-		my $ip = $tqout[$i]->dequeue_nb();
+		my $ip = $tqout[$i]->dequeue_timed(0.1);
 		if (defined $ip)
 		{
+			$activity = 1;
+
 			my $x = $tqout[$i]->dequeue();
 			my $y = $tqout[$i]->dequeue();
 
-say "RCV[$i]: $ip - $x,$y";
 			if ($ip == 255)
 			{
-				say "Y=$y";
-				last MAIN;
+				say "NAT[$i -> $ip] $x,$y";
+				if ($partone == 0)
+				{
+					$partone = 1;
+					say "FIRST-BROADCAST: $y";
+				}
+				$natx = $x;
+				$naty = $y;
+				next;
 			}
+			else
+			{
+				say "RCV[$i -> $ip] $x,$y";
+			}
+			next if $ip > $nodes - 1; # assert
 
-			next if $ip > $nodes - 1;
 			$tqin[$ip]->enqueue($x);
 			$tqin[$ip]->enqueue($y);
 		}
+	}
+
+	if ($activity == 0)
+	{
+		my $active = 0;
+		for my $i (0..$nodes-1)
+		{
+			$active = 1 unless $idlef[$i];
+		}
+
+		next if $active;
+
+		say "REACTIVATE: $natx, $naty";
+		sleep(1);
+
+		if ($pnaty == $naty)
+		{
+			say "DOUBLE-Y: $naty";
+			last MAIN;
+		}
+		$pnaty = $naty;
+
+		$tqin[0]->enqueue($natx);
+		$tqin[0]->enqueue($naty);
 	}
 }
 
