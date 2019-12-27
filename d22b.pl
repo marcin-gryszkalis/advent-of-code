@@ -3,11 +3,8 @@ use 5.28.0;
 use warnings;
 use strict;
 use Data::Dumper;
-use bignum;
+use Math::BigInt;
 
-# https://en.wikipedia.org/wiki/Modular_multiplicative_inverse
-# # https://rosettacode.org/wiki/Modular_inverse#Perl
-use ntheory 'invmod';
 
 my @commands = ();
 open(my $f, "d22.txt") or die $!;
@@ -17,26 +14,24 @@ while (<$f>)
 	push(@commands, $_);
 }
 
-my $size = 10007;
-# $size = 119315717514047;
+# my $size = 10007;
+my $size = 119315717514047;
 my $rep = 101741582076661;
 my $p = 2020;
-
-my @deck = (0..$size-1);
-# printf("deck: %s\n", join(" ", @deck));
+# $p = 4485;
 
 my @f = ();
-my $i = 0;
+my $i = 1;
 my $x = $p;
-for my $i (0..10)
+for my $i (1..10)
 {
 	for my $c (reverse @commands)
 	{
 #		say $c;
 		if ($c =~ /deal with increment (\d+)/)
 		{
-			my $incr = $1;
-			$p = ($p * invmod($incr, $size)) % $size;
+			my $incr = Math::BigInt->new($1);
+			$p = ($p * $incr->copy()->bmodinv($size)) % $size;
 		}
 		elsif ($c =~ /cut (-?\d+)/)
 		{
@@ -58,23 +53,34 @@ for my $i (0..10)
 }
 
 
-# a*x+b = f0
-# a*f0+b = f1
+# a*x+b = f1
+# a*f1+b = f2
 #    V
-# a*x - a*f0 = f0 - f1
-# a * (x - f0) = f0 - f1
-# a = (f0 - f1) / (x - f0) # / -- div % size -> modular inverse
-# b = f0 - (a * x)
+# a*x - a*f1 = f1 - f2
+# a * (x - f1) = f1 - f2
+# a = (f1 - f2) / (x - f1) # / -- div % size -> modular inverse
+# b = f1 - (a * x)
 
-my $a = (($f[0] - $f[1]) * invmod($x - $f[0], $size)) % $size;
-my $b = ($f[0] - $a * $x) % $size;
+my $a = (($f[1] - $f[2]) * Math::BigInt->new($x - $f[1])->bmodinv($size)) % $size;
+my $b = ($f[1] - $a * $x) % $size;
 say "a=$a";
 say "b=$b";
 
-# https://www.nayuki.io/page/fast-skipping-in-a-linear-congruential-generator
-# x_k = [(a^n * x_0  % m)+((((a^n−1) % ((a−1)* m) ) / (a−1) ) * b)] % m.
-# $rep = 5;
+# f_n(x) = ... a * ( a * (a*x + b) + b) + b ...
+# f_n(x) = ... a * ( a*a*x + a*b) + b) + b ...
+# f_n(x) = ... a*a*a*x + a*a*b + a*b + b ...
+# f_n(x) = ... a^3*x + a^2*b + a^1*b + a^0*b ...
 
-my $result = ((( ($a ** $rep) * $x) % $size) + (((($a ** $rep - 1) % (($a - 1) * $size)) / ($a-1)) * $b)) % $size;
+# f_n(x) = a^n*x + a^(n-1)*b + a^(n-2)*b + ... + a^(n-n)*b
+# f_n(x) = a^n*x + a^(n-1)*b + a^(n-2)*b + ... + b
+
+# geometric seq, sum of elements s_1..s_k:
+# s_k = a_1 * (1 - q^n) / (1 - q)
+
+# f_n(x) = a^n*x + b * (1 - a^n) / (1 - a)
+
+# my $result = (((($a ** $x) % $size) + ($b * (1 - $a ** $rep) % $size)) / (1 - $a)) % $size;
+
+my $result = ((($a->copy()->bmodpow($rep,$size) * $x) % $size) + ($b * (1 - $a->copy()->bmodpow($rep,$size)) * Math::BigInt->new(1-$a)->bmodinv($size))) % $size;
 
 say "result at $rep repetitions = $result";
