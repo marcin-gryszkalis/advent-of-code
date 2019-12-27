@@ -3,6 +3,11 @@ use 5.28.0;
 use warnings;
 use strict;
 use Data::Dumper;
+use bignum;
+
+# https://en.wikipedia.org/wiki/Modular_multiplicative_inverse
+# # https://rosettacode.org/wiki/Modular_inverse#Perl
+use ntheory 'invmod';
 
 my @commands = ();
 open(my $f, "d22.txt") or die $!;
@@ -15,38 +20,19 @@ while (<$f>)
 my $size = 10007;
 # $size = 119315717514047;
 my $rep = 101741582076661;
-my $p = 4485;
+my $p = 2020;
 
 my @deck = (0..$size-1);
 # printf("deck: %s\n", join(" ", @deck));
 
-# https://en.wikipedia.org/wiki/Modular_multiplicative_inverse
-# https://rosettacode.org/wiki/Modular_inverse#Perl
-sub invmod
-{
-	my($a,$n) = @_;
-	my($t,$nt,$r,$nr) = (0, 1, $n, $a % $n);
-	while ($nr != 0)
-	{
-		# Use this instead of int($r/$nr) to get exact unsigned integer answers
-		my $quot = int( ($r - ($r % $nr)) / $nr );
-		($nt,$t) = ($t-$quot*$nt,$nt);
-		($nr,$r) = ($r-$quot*$nr,$nr);
-	}
-
-	return if $r > 1; # can't find (normal div is not defined for 0, invmod is not defined when a ≡_n 0 [a congruent mod n with 0])
-	$t += $n if $t < 0;
-	return $t;
-}
-
 my @f = ();
 my $i = 0;
 my $x = $p;
-for my $i (0..1)
+for my $i (0..10)
 {
 	for my $c (reverse @commands)
 	{
-		say $c;
+#		say $c;
 		if ($c =~ /deal with increment (\d+)/)
 		{
 			my $incr = $1;
@@ -59,7 +45,7 @@ for my $i (0..1)
 		}
 		elsif ($c =~ /deal into new stack/)
 		{
-			$p = $size - $p - 1;
+			$p = ($size - $p - 1) % $size;
 		}
 		else
 		{
@@ -68,10 +54,9 @@ for my $i (0..1)
 	}
 
 	$f[$i] = $p;
+	say "f_${i}($x)=$f[$i]";
 }
 
-say "f($x)=$f[0]";
-say "f(f($x))=$f[1]";
 
 # a*x+b = f0
 # a*f0+b = f1
@@ -84,5 +69,12 @@ say "f(f($x))=$f[1]";
 my $a = (($f[0] - $f[1]) * invmod($x - $f[0], $size)) % $size;
 my $b = ($f[0] - $a * $x) % $size;
 say "a=$a";
-say "a=$b";
+say "b=$b";
 
+# https://www.nayuki.io/page/fast-skipping-in-a-linear-congruential-generator
+# x_k = [(a^n * x_0  % m)+((((a^n−1) % ((a−1)* m) ) / (a−1) ) * b)] % m.
+# $rep = 5;
+
+my $result = ((( ($a ** $rep) * $x) % $size) + (((($a ** $rep - 1) % (($a - 1) * $size)) / ($a-1)) * $b)) % $size;
+
+say "result at $rep repetitions = $result";
