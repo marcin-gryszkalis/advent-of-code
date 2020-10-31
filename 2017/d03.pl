@@ -3,7 +3,7 @@ use Data::Dumper;
 use List::Util qw/min max/;
 use File::Slurp;
 
-my $x = 265149;
+my $search = 265149;
 
 my $level = 2; # level 1 is sick case
 while (1)
@@ -12,9 +12,8 @@ while (1)
 
     # level starts at
     my $lstart = (2 * $level - 3)**2 + 1;
-    #print "level $level starts at $lstart\n";
 
-    last if $lstart > $x; # too far
+    last if $lstart > $search; # too far
     $level++;
 }
 
@@ -27,10 +26,7 @@ for my $n (0..3) # 4 sides
 {
     # middle digits are at
     my $mid = $lstart + (($side-1)/2)-1 + ($side-1)*$n;
-
-    my $dn = abs($mid - $x);
-#    print "dn ($mid,$x) = $dn\n";
-
+    my $dn = abs($mid - $search);
     $min_dn = $dn if $dn < $min_dn;
 }
 
@@ -38,12 +34,47 @@ my $dist = $level - 1 + $min_dn;
 printf "stage 1: %d + %d = %d\n", $level-1, $min_dn, $dist;
 
 
-# bok = level*2 - 1
-# obwod = 4 * bok - 4 =
-# 4 * (level*2 - 1) - 4 =
-# 8*level - 8 =
-# 8*(level - 1)
+# stage 2, a sim
+my $h;
+$h->{0}->{0} = 1; # x,y
+my $x = 0;
+my $y = 0;
 
-# level zaczyna się od s = (2*(level-1)+1)^2 + 1
+my $d = 0; # direction
+my @dx = qw/1 0 -1 0/;
+my @dy = qw/0 1 0 -1/;
 
-# srodkowe cyfry to s + ((bok-1)/2)-1) + (bok-1)*n [n=0..3]
+my $v = 0;
+my $i = 0;
+while (1)
+{
+    # step forward
+    $x = $x + $dx[$d];
+    $y = $y + $dy[$d];
+    # print "$i: x($x) y($y) d($d)\n";
+
+    # sum neighbours
+    $v = 0;
+    for my $ax (-1..1)
+    {
+        for my $ay (-1..1)
+        {
+            next unless exists $h->{$x + $ax}->{$y + $ay};
+            $v += $h->{$x + $ax}->{$y + $ay};
+        }
+    }
+    $h->{$x}->{$y} = $v;
+
+    last if $v > $search;
+
+    # check if there's empty box on my left
+    my $nd = ($d + 1) % 4;
+    if (!exists $h->{$x + $dx[$nd]}->{$y + $dy[$nd]}) # make a turn
+    {
+        $d = $nd;
+    }
+
+    $i++;
+}
+
+printf "stage 2: %d at step %d\n", $v, $i;
