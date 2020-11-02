@@ -9,7 +9,7 @@ use Algorithm::Combinatorics qw(combinations permutations);
 my @f = read_file(\*STDIN);
 # @f = map { chomp; int $_ } @f;
 
-my $t = 2503;
+my $t = 2503; # duration of race
 
 my $h;
 my @herd;
@@ -53,56 +53,22 @@ for my $i (1..$t)
 
         if ($d->{$rn} == 0)
         {
-            if ($flying->{$rn})
-            {
-                $flying->{$rn} = 0;
-                $d->{$rn} = $r->{rest};
-            }
-            else
-            {
-                $flying->{$rn} = 1;
-                $d->{$rn} = $r->{duration};
-            }
+            $flying->{$rn} = 1 - $flying->{$rn};
+            $d->{$rn} = $flying->{$rn} ? $r->{duration} : $r->{rest};
         }
     }
 
-    my $best = -1;
-    my @leaders = ();
-    for my $rn (sort { $distance->{$b} <=> $distance->{$a} } keys %$distance)
+    my $best = max(values %$distance);
+    for my $rn (@herd)
     {
-        if ($best == -1)
-        {
-            $best = $distance->{$rn};
-            push(@leaders, $rn);
-        }
-        else
-        {
-            if ($distance->{$rn} == $best)
-            {
-                push(@leaders, $rn);
-            }
-            else
-            {
-                last;
-            }
-        }
-    }
-
-    for my $l (@leaders)
-    {
-        $points->{$l}++;
+        $points->{$rn}++ if $distance->{$rn} == $best;
     }
 
 }
 
-my $best = 0;
-my $bestp = 0;
 for my $rn (@herd)
 {
     printf "%-10s %4d %4d\n", $rn, $distance->{$rn}, $points->{$rn};
-    $best = $distance->{$rn} if $distance->{$rn} > $best;
-    $bestp = $points->{$rn} if $points->{$rn} > $bestp;
 }
-print "stage 1: $best\n";
-print "stage 2: $bestp\n";
-
+printf "stage 1: %d\n", max(values %$distance);
+printf "stage 2: %d\n", max(values %$points);
