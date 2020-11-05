@@ -63,9 +63,9 @@ while (1)
             $screen->{$p->{x}}->{$p->{y}} = 1;
         }
 
-        for my $y ($miny..$maxy)
+        for my $y ($miny-1..$maxy+1)
         {
-            for my $x ($minx..$maxx)
+            for my $x ($minx-1..$maxx+1)
             {
                 print((exists $screen->{$x}->{$y}) ? '#' : '.');
             }
