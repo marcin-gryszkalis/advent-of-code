@@ -31,7 +31,6 @@ sub dist
             my $r = '';
 
             s/,$d1(,.*?,)$d2,/,$r,$1,/g;
-            s/,$d2(,.*?,)$d1,/,$r,$1,/g;
         }
 
         for my $i (0..5) # reduction
@@ -45,7 +44,6 @@ sub dist
         }
 
         s/,+/,/g; # cleanup
-
         last if length($_) == $l;
     }
 
