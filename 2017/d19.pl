@@ -44,11 +44,11 @@ while (1)
         if ($dir eq 'v')
         {
             $dir = 'h';
-            if ($map->[$y]->[$x-1] eq '-') # turn W
+            if (($map->[$y]->[$x-1] // '') eq '-') # turn W
             {
                 $dx = -1; $dy = 0;
             }
-            elsif ($map->[$y]->[$x+1] eq '-') # E
+            elsif (($map->[$y]->[$x+1] // '') eq '-') # E
             {
                 $dx = 1; $dy = 0;
             }
@@ -60,11 +60,11 @@ while (1)
         else
         {
             $dir = 'v';
-            if ($map->[$y-1]->[$x] eq '|') # turn N
+            if (($map->[$y-1]->[$x] // '') eq '|') # turn N
             {
                 $dx = 0; $dy = -1;
             }
-            elsif ($map->[$y+1]->[$x] eq '|') # S
+            elsif (($map->[$y+1]->[$x] // '') eq '|') # S
             {
                 $dx = 0; $dy = 1;
             }
