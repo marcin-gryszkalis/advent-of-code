@@ -20,7 +20,6 @@ my @thread;
 my $tq01;
 my $tq10;
 
-my @thwaits :shared = (0,0);
 my @thsentcnt :shared = (0,0);
 
 my @f = read_file(\*STDIN);
@@ -71,6 +70,7 @@ sub thcode
 
             if ($op eq 'snd')
             {
+                printf "PID%d :: send %s\n", $me, val($x);
                 $qout->enqueue(val($x));
                 $thsentcnt[$me]++;
             }
@@ -94,15 +94,15 @@ sub thcode
             {
                 while (1)
                 {
-                    $thwaits[$me]++;
-                    my $m = $qin->dequeue_nb();
+                    my $m = $qin->dequeue_timed(1);
                     if (defined $m)
                     {
                         $reg->{$x} = $m;
+                        printf "PID%d :: recv %s\n", $me, $m;
                         last;
                     }
+                    return;
                 }
-                $thwaits[$me] = 0;
             }
             elsif ($op eq 'jgz')
             {
@@ -136,13 +136,6 @@ while ($thalive > 0)
             $thread[$i]->join();
             $thalive--;
         }
-    }
-
-    if ($thwaits[0] > 100 && $thwaits[1] > 100) # deadlock
-    {
-        $thread[0]->kill('SIGTERM');
-        $thread[1]->kill('SIGTERM');
-        sleep(1);
     }
 }
 
