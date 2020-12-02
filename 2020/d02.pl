@@ -15,8 +15,8 @@ my $d = 0;
 for (@f)
 {
     # 3-5 q: scqrdqq
-    m/(\d+)-(\d+)\s+(\S):\s+(\S+)/;
-    my ($a,$b,$l,$p) = @{^CAPTURE};
+
+    my ($a,$b,$l,$p) = split/\W+/;
 
     $d++ if (substr($p,$a-1,1) eq $l) xor (substr($p,$b-1,1) eq $l);
 
@@ -25,4 +25,3 @@ for (@f)
 }
 print "stage 1: $c\n";
 print "stage 2: $d\n";
-
