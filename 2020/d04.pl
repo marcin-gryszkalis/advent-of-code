@@ -16,15 +16,9 @@ my $stage1 = 0;
 my $stage2 = 0;
 for (@f)
 {
-    my @a = split/\s+/;
-    my %h = ();
-
-    for my $k (@a)
-    {
-        my ($n,$m) = split/:/, $k;
-        $h{$n} = $m;
-    }
+    my %h = split/[:\s]+/;
     $h{cid} = 'xxx';
+
     next unless scalar(keys %h) == 8;
 
     $stage1++;
