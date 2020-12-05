@@ -13,8 +13,7 @@ my @f = read_file(\*STDIN);
 my %h;
 for (@f)
 {
-    s/[FL]/0/g;
-    s/[BR]/1/g;
+    y/FLBR/0011/;
     $h{oct("0b".$_)} = 1;
 }
 
