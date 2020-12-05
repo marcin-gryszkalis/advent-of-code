@@ -24,20 +24,9 @@ for (@f)
     $h{$id} = 1;
 }
 
-printf "stage 1: %d\n", max(keys(%h));
+printf "stage 1: %d\n", max(keys %h);
 
-my $start = 0;
-for my $id (0..1023)
+for my $id (min(keys %h)..max(keys %h))
 {
-    if (exists $h{$id} && !$start)
-    {
-        $start = 1;
-        next;
-    }
-
-    if (!exists $h{$id} && $start)
-    {
-        print "stage 2: $id\n";
-        last;
-    }
+    print "stage 2: $id\n" unless exists $h{$id};
 }
