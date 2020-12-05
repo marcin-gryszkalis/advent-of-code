@@ -15,13 +15,7 @@ for (@f)
 {
     s/[FL]/0/g;
     s/[BR]/1/g;
-    m/(.......)(...)/;
-
-    my $a = oct("0b".$1);
-    my $b = oct("0b".$2);
-
-    my $id = 8*$a + $b;
-    $h{$id} = 1;
+    $h{oct("0b".$_)} = 1;
 }
 
 printf "stage 1: %d\n", max(keys %h);
