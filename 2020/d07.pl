@@ -18,7 +18,7 @@ for (@ff)
 {
     chomp;
 # dark violet bags contain no other bags.
-    s/no other bag/0 other bag/;
+    next if /no other bag/;
 # vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
     die $_ unless m/(\S+\s\S+) bags contain (.*)/;
     my $b = $1;
@@ -30,7 +30,7 @@ sub sr1
 {
     my $b = shift;
     return 1 if $b =~ /shiny gold/;
-    return 0 if $b =~ /other/;
+    return 0 unless exists $h{$b};
     my $r = 0;
     for my $n (@{$h{$b}})
     {
@@ -52,7 +52,7 @@ printf "stage 1: $stage1\n";
 sub sr2
 {
     my $b = shift;
-    return 1 if $b =~ /other/;
+    return 1 unless exists $h{$b};
 
     my $r = 0;
     for my $n (@{$h{$b}})
@@ -62,7 +62,7 @@ sub sr2
         $r += $m * sr2($2);
     }
 
-    return $r+1;
+    return $r + 1;
 }
 
 $stage2 = sr2("shiny gold") - 1;
