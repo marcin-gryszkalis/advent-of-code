@@ -61,3 +61,27 @@ sub c
     return $s;
 }
 printf "stage 2 (recursive): %d\n", c($max);
+
+
+# assume (along with examples and actual input) that gaps are 1 or 3, never 2!
+my $groupsize = 0;
+my %groupx = ( # number of valid combinations in group of given size
+    2 => 1, # 2 elements with 1 gap between - both are required
+    3 => 2, # 3 elements, middle can be switched on or off
+    4 => 4, # 4 elements, 2 middle can be switched (00,01,10,11)
+    5 => 7, # 5 elements, 3 middle (100,010,001,110,101,011,111 - but not 000 -> gap too large)
+    # 6+ no such groups in input
+    );
+
+my $product = 1;
+for my $i (1..$#f)
+{
+    die "no 2s" if $f[$i] - $f[$i-1] == 2; # assert
+    $groupsize++;
+    if ($f[$i] - $f[$i-1] == 3)
+    {
+        $product *= $groupx{$groupsize} if $groupsize > 1;
+        $groupsize = 0;
+    }
+}
+printf "stage 2 (assumptions): %d\n", $product;
