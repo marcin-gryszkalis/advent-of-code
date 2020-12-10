@@ -65,13 +65,16 @@ printf "stage 2 (recursive): %d\n", c($max);
 
 # assume (along with examples and actual input) that gaps are 1 or 3, never 2!
 my $groupsize = 0;
+
 my %groupx = ( # number of valid combinations in group of given size
     2 => 1, # 2 elements with 1 gap between - both are required
     3 => 2, # 3 elements, middle can be switched on or off
     4 => 4, # 4 elements, 2 middle can be switched (00,01,10,11)
     5 => 7, # 5 elements, 3 middle (100,010,001,110,101,011,111 - but not 000 -> gap too large)
-    # 6+ no such groups in input
+    6 => 11,# 6 elements, 4 middle (1100,1010,1001,0110,0101,0011, 1110,1101,1011,0111, 1111)
+    # note: 6+ no such groups in input
     );
+# https://oeis.org/search?q=1+2+4+7+11&sort=&language=&go=Search
 
 my $product = 1;
 for my $i (1..$#f)
