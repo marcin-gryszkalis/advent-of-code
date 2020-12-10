@@ -38,11 +38,26 @@ for my $i (1..$#f) # skip 0
     my $k = $f[$i];
     $w{$k} = ($w{$k-1} // 0) + ($w{$k-2} // 0) + ($w{$k-3} // 0)
 }
-
 $stage2 = $w{$max};
 
-for my $k (sort { $b <=> $a } keys %w)
+print "stage 2 (forward tracking): $stage2\n";
+
+
+my %available = map { $_ => 1 } @f;
+my %cache;
+sub c
 {
-    print "$k $w{$k}\n";
+    my $i = shift;
+
+    return 1 if $i == 0;
+    return $cache{$i} if exists $cache{$i};
+
+    my $s = 0;
+    for my $d (1..3)
+    {
+        $s += c($i-$d) if exists $available{$i-$d};
+    }
+    $cache{$i} = $s;
+    return $s;
 }
-print "stage 2: $stage2\n";
+printf "stage 2 (recursive): %d\n", c($max);
