@@ -15,7 +15,7 @@ for my $stage (1..2)
 {
     my $a;
     my $r = 0;
-    my @b = split(//,'.' x $M+2);
+    my @b = split(//,'.' x ($M+2));
     $a->[$r++] = \@b;
     for (@f)
     {
@@ -24,7 +24,7 @@ for my $stage (1..2)
         push(@b,'.'); unshift(@b, '.');
         $a->[$r++] = \@b;
     }
-    @b = split(//,'.' x $M+2);
+    @b = split(//,'.' x ($M+2));
     $a->[$r++] = \@b;
 
     if ($stage == 2)
