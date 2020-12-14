@@ -20,15 +20,15 @@ my %m1;
 my %m2;
 my $mask;
 
-# m               01X 01X
-# a               000 111
-# expected        010 011
+# mask               01X 01X
+# a                  000 111
+# expected           010 011
 
-# m1              011 011
-# m0              010 010
+# mask1              011 011
+# mask0              010 010
 
-# a & m1          000 011
-# a & m1 | m0     010 011
+# a & mask1          000 011
+# a & mask1 | mask0  010 011
 
 my $mask0; # X=0
 my $mask1; # X=1
