@@ -20,31 +20,23 @@ my %m1;
 my %m2;
 my $mask;
 
+my $mask0; # X=0
+my $mask1; # X=1
 
 for (@ff)
 {
     if (/mask = ([01X]+)/)
     {
-        $mask = $1;
+        $mask0 = $mask1 = $1;
+        $mask0 =~ s/X/0/g; $mask0 = oct("0b$mask0");
+        $mask1 =~ s/X/1/g; $mask1 = oct("0b$mask1");
     }
     elsif (/mem\[(\d+)\] = (\d+)/)
     {
-        my $addr = $1;
-        my $v = $2;
-
-        my @va = split//, sprintf("%036b", $v);
-        my @ma = split//, $mask;
-        my $r = '';
-        for my $i (0..35)
-        {
-            $r .= ($ma[$i] eq 'X' ? $va[$i] : $ma[$i]);
-        }
-
-        $m1{$addr} = oct("0b$r");
+        $m1{$1} = ($2 & $mask1) | $mask0;
     }
     else { die $_ }
 }
-
 
 
 sub g
