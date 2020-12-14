@@ -45,11 +45,8 @@ sub g
     my $v = shift;
     if ($a =~ /X/)
     {
-        my $b = $a;
-        $a =~ s/X/0/;
-        $b =~ s/X/1/;
-        g($a, $v);
-        g($b, $v);
+        g($a =~ s/X/0/r, $v);
+        g($a =~ s/X/1/r, $v);
     }
     else
     {
