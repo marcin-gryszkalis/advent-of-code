@@ -17,11 +17,11 @@ my $stage2 = 0;
 my $r = 1;
 my %h = map { $_ => $r++ } @in;
 
-my $p = $in[$#in]; # num spoken in  prev round
+my $p = $in[$#in]; # num spoken in prev round
 while (1)
 {
-    my $d = defined $h{$p} ? ($r - 1 - $h{$p}) : 0;
-    $h{$p} = $r-1;
+    my $d = exists $h{$p} ? $r - 1 - $h{$p} : 0;
+    $h{$p} = $r - 1;
     $p = $d;
 
     $stage1 = $d if $r == 2020;
