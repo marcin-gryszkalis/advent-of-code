@@ -16,14 +16,13 @@ my @ff = read_file(\*STDIN);
 
 my @b;
 my $W = length($ff[0]);
-my $M = $ROUNDS+2;
-my $N = 2*$M + $W - 2;
+my $M = $ROUNDS*2;
 
 $; = ','; # $h{1,2,3}
 
 for my $stage (0..1)
 {
-    my %mm;
+    my $m;
 
     my $middle = int((2*$M + $W) / 2);
 
@@ -43,62 +42,47 @@ for my $stage (0..1)
             push(@l, ($middle) x ($DIMENSIONS[$stage] - 2));
             if ($e eq '#')
             {
-                $mm{join($;,@l)} = $e;
+                $m->{join($;,@l)} = 1;
 
-                my $d = 0;
-                for my $v (@l)
-                {
-                    $rangemin = $v if $v < $rangemin;
-                    $rangemax = $v if $v > $rangemax;
-                    $d++;
-                }
+                $rangemin = min(@l,$rangemin);
+                $rangemax = max(@l,$rangemax);
             }
             $x++;
         }
         $y++;
     }
 
-    my $m = \%mm;
     for my $round (1..$ROUNDS)
     {
         printf "round: %d (hypercube %d ^ %d)\n", $round, ($rangemax-$rangemin+1+2), $DIMENSIONS[$stage];
 
-        my $m2 = clone($m);
+        my $m2 = {};
 
         my $dit = variations_with_repetition([$rangemin-1..$rangemax+1], $DIMENSIONS[$stage]);
-        while (my $dim = $dit->next)
+        W: while (my $dim = $dit->next)
         {
             my $s = 0;
+
             my $ddit = variations_with_repetition([-1,0,1], $DIMENSIONS[$stage]);
             while (my $ddim = $ddit->next)
             {
                 next if all { $_ == 0 } @$ddim;
                 my @l = map { $ddim->[$_] + $dim->[$_] } (0..$DIMENSIONS[$stage]-1);
                 $s++ if exists $m->{join($;,@l)};
+                next W if $s > 3; # optimization 8%
             }
 
             my $e = join($;,@$dim);
             if ((exists $m->{$e} && $s >= 2 && $s <= 3) || (!exists $m->{$e} && $s == 3))
             {
-                $m2->{$e} = '#';
+                $m2->{$e} = 1;
 
-                my $d = 0;
-                for my $v (@$dim)
-                {
-                    $rangemin = $v if $v < $rangemin;
-                    $rangemax = $v if $v > $rangemax;
-                    $d++;
-                }
-
+                $rangemin = min(@$dim,$rangemin);
+                $rangemax = max(@$dim,$rangemax);
             }
-            else
-            {
-                delete $m2->{$e};
-            }
-
         }
 
-        $m = clone($m2);
+        $m = $m2;
     }
 
     printf "stage %d: %d\n", $stage+1, scalar %$m;
