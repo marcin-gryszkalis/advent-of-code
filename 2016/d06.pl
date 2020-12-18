@@ -19,9 +19,7 @@ for my $stage (1..2)
         my $i = 0;
         for my $k (split//)
         {
-            $h->{$i}->{$k}++;
-    #        print "$i $k\n";
-            $i++;
+            $h->{$i++}->{$k}++;
         }
     }
 
@@ -32,5 +30,6 @@ for my $stage (1..2)
         @t = reverse @t if $stage == 2;
         $p .= $t[0];
     }
+
     printf "stage $stage: %s\n", $p;
 }
