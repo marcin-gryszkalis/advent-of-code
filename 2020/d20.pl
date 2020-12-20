@@ -8,18 +8,25 @@ use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations);
 use Clone qw/clone/;
 
-my @ff = read_file(\*STDIN);
-@ff = map { chomp; $_ } @ff;
-
-$; = ',';
+my $USECOLORS = eval { use Term::ANSIColor; 1 };
+my %seacolors = (
+    '.' => 'bold blue',
+    '#' => 'blue',
+    'O' => 'bold green'
+);
 
 my @properties = qw/u d l r ur dr lr rr/;
 
 my @monster_pattern = (
-'__________________#_',
-'#____##____##____###',
-'_#__#__#__#__#__#___',
+'                  # ',
+'#    ##    ##    ###',
+' #  #  #  #  #  #   ',
 );
+
+my @ff = read_file(\*STDIN);
+@ff = map { chomp; $_ } @ff;
+
+$; = ',';
 
 my $stage1 = 0;
 my $stage2 = 0;
@@ -360,7 +367,7 @@ W: while (1) # search for monsters
             {
                 for my $mx (0..$mxl-1)
                 {
-                    next if $monster{$mx,$my} eq '_';
+                    next if $monster{$mx,$my} eq ' ';
 
                     next X if $sea->{$x+$mx,$y+$my} ne '#';
                 }
@@ -370,7 +377,7 @@ W: while (1) # search for monsters
             {
                 for my $mx (0..$mxl-1)
                 {
-                    next if $monster{$mx,$my} eq '_';
+                    next if $monster{$mx,$my} eq ' ';
                     $sea->{$x+$mx,$y+$my}="O";
                 }
             }
@@ -388,15 +395,18 @@ W: while (1) # search for monsters
     die if $round > 7; # there are 8 states
 }
 
+print(color("reset")) if $USECOLORS;
 for my $y (0..$M-1)
 {
     for my $x (0..$M-1)
     {
+        print color($seacolors{$sea->{$x,$y}}) if $USECOLORS;
         print $sea->{$x,$y};
         $stage2++ if $sea->{$x,$y} eq '#';
     }
     print "\n";
 }
 print "\n";
+print(color("reset")) if $USECOLORS;
 
 print "stage 2: $stage2\n";
