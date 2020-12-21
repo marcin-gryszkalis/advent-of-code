@@ -40,22 +40,22 @@ for (@ff)
 
 my $matchia;
 my $matchai;
-while (1)
+my $todo = keys %$h;
+while ($todo)
 {
     AL: for my $al (keys %{$h})
     {
         next if exists $matchai->{$al};
-        my $c = $hac->{$al};
 
         my $m = 0;
         my $mi = 0;
         for my $i (keys %{$h->{$al}})
         {
             next if exists $matchia->{$i};
-            if ($h->{$al}->{$i} == $c)
+            if ($h->{$al}->{$i} == $hac->{$al})
             {
                 $m++;
-                next AL if $m > 1; # more than 1 match
+                next AL if $m > 1; # more than 1 match for this allergen
                 $mi = $i;
             }
         }
@@ -65,10 +65,9 @@ while (1)
             print "match: $al - $mi\n";
             $matchia->{$mi} = $al;
             $matchai->{$al} = $mi;
+            $todo--;
         }
     }
-
-    last if scalar(keys %$matchai) == scalar(keys %$h);
 }
 
 $stage1 = sum( map { $allingsh->{$_} } grep { !exists $matchia->{$_} } @allings);
