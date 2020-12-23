@@ -2,25 +2,25 @@
 use warnings;
 use strict;
 use Data::Dumper;
-use List::Util qw/min max first sum product/;
+use List::Util qw/min max first sum product any all/;
 use List::MoreUtils qw(uniq);
 use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations);
 use Clone qw/clone/;
 
 my $startx = "598162734";
-#test case:
-#$startx = "389125467";
+# test case:
+# $startx = "389125467";
 
 my @a = split//, $startx;
 
 my @moves_ps = (100, 10_000_000);
 my @add_ps = (0, 1_000_000);
 
-for my $stage (0..1)
+for my $stage (1..2)
 {
-    my $moves = $moves_ps[$stage];
-    my $add = $add_ps[$stage];
+    my $moves = $moves_ps[$stage-1];
+    my $add = $add_ps[$stage-1];
 
     my $minv = 1;
     my $maxv = max(@a);
@@ -34,20 +34,15 @@ for my $stage (0..1)
     my $cm;
     for ((@a[1..$#a], $maxv+1..$add))
     {
-        $cm = { v => $_, nxt => undef };
-        $p->{nxt} = $cm;
-
-        $qs{$_} = $cm;
-
+        $p->{nxt} = $qs{$_} = $cm = { v => $_, nxt => undef };
         $p = $cm;
     }
+    $cm->{nxt} = $start; # close the cycle
 
     $maxv = max($maxv,$add);
 
-    $cm->{nxt} = $start; # close the cycle
-
     $cm = $start;
-    for my $round (1..$moves)
+    for (1..$moves)
     {
         my $a1 = $cm->{nxt};
         my $a2 = $cm->{nxt}->{nxt};
@@ -60,7 +55,7 @@ for my $stage (0..1)
         {
             $dest--;
             $dest = $maxv if $dest < $minv;
-            last if $dest != $a1->{v} && $dest != $a2->{v} && $dest != $a3->{v};
+            last unless any { $_->{v} == $dest } ($a1,$a2,$a3);
         }
 
         my $k = $qs{$dest}->{nxt}; # paste
@@ -72,16 +67,10 @@ for my $stage (0..1)
 
     $cm = $qs{1};
 
-    if ($stage == 0)
+    if ($stage == 1)
     {
-        my $stage1 = '';
-        for ($minv..$maxv-1)
-        {
-            $cm = $cm->{nxt};
-            $stage1 .= $cm->{v};
-        }
-
-        print "stage 1: $stage1\n";
+        printf "stage 1: %s\n",
+            join("", map { $cm = $cm->{nxt}; $cm->{v} } ($minv..$maxv-1));
     }
     else
     {
