@@ -19,12 +19,20 @@ my $input = "ahsbgdzn";
 
 my $h;
 
-sub scan($)
+my @stretch = qw(0 2016);
+
+sub scan($$)
 {
     my $idx = shift;
+    my $stretchrounds = shift;
     return if exists $h->{$idx};
 
     my $xh = md5_hex($input.$idx);
+    for my $sr (1..$stretchrounds)
+    {
+        $xh = md5_hex($xh);
+    }
+
     if ($xh =~ /(.)\1\1/)
     {    
         my $c = $1;
@@ -43,34 +51,39 @@ sub scan($)
     $h->{$idx}->{hash} = $xh; 
 }
 
-my $i = 0;
-my $fnd = 0;
-LOOP: while (1)
+for my $stage(1..2)
 {
-    scan($i);
-
-    if (exists $h->{$i}->{three})
+    $h = undef;
+    my $i = 0;
+    my $fnd = 0;
+    LOOP: while (1)
     {
-        for my $j ($i+1..$i+1+1000)
+        scan($i, $stretch[$stage-1]);
+    
+        if (exists $h->{$i}->{three})
         {
-            scan($j);
-
-            if (exists $h->{$j}->{five}->{$h->{$i}->{three}})
+            for my $j ($i+1..$i+1+1000)
             {
-                $fnd++;
-                my $dist = $j - $i;
-                my $ix = $hex[$h->{$i}->{three}];
-                my $h1 = $h->{$i}->{hash};
-                my $h2 = $h->{$j}->{hash};
-                $h1 =~ s/($ix{3})/$RED$1$RST/;
-                $h2 =~ s/($ix{5})/$RED$1$RST/;
-                
-                print "$fnd: $i ($ix) -> $j [dist=$dist] | $h1 - $h2\n";
-                
-                last LOOP if $fnd == 64;
-                last;
+                scan($j, $stretch[$stage-1]);
+    
+                if (exists $h->{$j}->{five}->{$h->{$i}->{three}})
+                {
+                    $fnd++;
+                    my $dist = $j - $i;
+                    my $ix = $hex[$h->{$i}->{three}];
+                    my $h1 = $h->{$i}->{hash};
+                    my $h2 = $h->{$j}->{hash};
+                    $h1 =~ s/($ix{3})/$RED$1$RST/;
+                    $h2 =~ s/($ix{5})/$RED$1$RST/;
+                    
+                    print "$stage $fnd: $i ($ix) -> $j [dist=$dist] | $h1 - $h2\n";
+                    
+                    last LOOP if $fnd == 64;
+                    last;
+                }
             }
         }
+        $i++;
     }
-    $i++;
+
 }
