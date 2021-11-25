@@ -10,12 +10,14 @@ use Clone qw/clone/;
 
 # input
 my $a = "11101000110010100";
-my $disksize = 272;
+# stage 1: my $disksize = 272;
+my $disksize = 35651584;
 
 # demo
 # my $a = "10000";
 # my $disksize = 20;
 
+my $step = 0;
 while (1)
 {
     # Call the data you have at this point "a".
@@ -32,8 +34,6 @@ while (1)
     $a = "${a}0$b";
 
     last if length $a >= $disksize;
-
-    print "a: $a\n";
 }
 
 $a = substr($a, 0, $disksize);
@@ -41,9 +41,8 @@ $a = substr($a, 0, $disksize);
 my $checksum = $a;
 while (1)
 {
-    print "checksum: $checksum\n";
     last if length($checksum) % 2 == 1;
     $checksum =~ s/(.)(.)/($1==$2?1:0)/eg;
 }
 
-print "Stage 1: $checksum\n";
+print "Checksum: $checksum\n";
