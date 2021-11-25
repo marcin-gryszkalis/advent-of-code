@@ -11,6 +11,8 @@ use Clone qw/clone/;
 my @srccode0 = read_file(\*STDIN);
 @srccode0 = map { chomp; $_ } @srccode0;
 
+# optimized code in d23mod.txt (original in d23.txt)
+
 # replaced 2 nested loops
 
 # cpy b c
