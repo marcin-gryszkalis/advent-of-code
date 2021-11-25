@@ -9,17 +9,14 @@ use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 use Digest::MD5 qw(md5_hex);
 
-my $RED="\e[31m";
-my $RST="\e[0m";
-
-my $startx;
-my $starty;
-
 my $maxx;
 my $maxy;
 my $maxv = 0;
 
 my $map0;
+
+my $nodex;
+my $nodey;
 
 my $y = 0;
 while (<>)
@@ -30,15 +27,11 @@ while (<>)
     {
         $map0->{$x,$y} = $e;
 
-        if ($e eq '0')
+        if ($e =~ /\d/)
         {
-            $startx = $x;
-            $starty = $y;
-        }
-
-        if ($e =~ /\d/ && $e > $maxv)
-        {
-            $maxv = $e;
+            $maxv = $e if $e > $maxv;
+            $nodex->{$e} = $x;
+            $nodey->{$e} = $y;
         }
 
         $x++;
@@ -48,19 +41,23 @@ while (<>)
 }
 $maxy = $y - 1;
 
-print "start ($startx,$starty)\n";
 print "maxv = $maxv\n";
 
-my $best = $maxx * $maxy * $maxv;
-my @nodes = (1..$maxv);
+my $distance;
 
-my $it = permutations(\@nodes);
+my $best = $maxx * $maxy * $maxv;
+my @nodes = (0..$maxv);
+
+my $it = combinations(\@nodes, 2);
 my $c = 0;
-PERM: while (my $nd = $it->next)
+COMB: while (my $nd = $it->next)
 {
-    print "perm: ".join("", @$nd)."\n";
-    my $x = $startx;
-    my $y = $starty;
+    my $src = $nd->[0];
+    my $dst = $nd->[1];
+
+    my $x = $nodex->{$src};
+    my $y = $nodey->{$src};
+
     my $map = clone($map0);
 
     $map->{$x,$y} = '.';
@@ -74,10 +71,8 @@ PERM: while (my $nd = $it->next)
     my @sq = ();
     push(@sq, $state0);
 
-    my $dst = shift(@$nd);
     my $visited = undef;
-
-    $visited->{$dst,$x,$y} = 1;
+    $visited->{$x,$y} = 1;
 
     my $found = 0;
 
@@ -86,35 +81,25 @@ PERM: while (my $nd = $it->next)
         my $st = shift(@sq);
         if (!defined $st) # empty queue
         {
-            next PERM;
+            next COMB; # strange
         }
 
-        my $sqs = scalar(@sq);
+##        my $sqs = scalar(@sq);
 ##        print "$st->{level}: $st->{x} $st->{y} (dst=$dst found=$found, sqsize=$sqs) path=$st->{path}\n";
 
         if ($map->{$st->{x},$st->{y}} eq $dst)
         {
-            $map->{$st->{x},$st->{y}} = '.';
-            $found++;
-##            print "Found $dst: $st->{level} $st->{path}\n";
-            @sq = (); # remove stuff from queue, it won't be better
-            if ($found == $maxv) # found last point
-            {
-                if ($st->{level} < $best)
-                {
-                    $best = $st->{level};
-                    print "Best: $st->{level} $st->{path}\n";
-                }
-                next PERM;
-            }
-            $dst = shift(@$nd);
+            $distance->{$src,$dst} = $st->{level};
+            $distance->{$dst,$src} = $st->{level};
+            print "distance($src -> $dst) = $st->{level}\n";
+            next COMB;
         }
-        elsif ($map->{$st->{x},$st->{y}} =~ /\d/) # other number, this path is not what we look for
+        elsif ($map->{$st->{x},$st->{y}} =~ /\d/) # other number, nothing special :)
         {
-            next;
+            # next;
         }
 
-        next if $st->{level} == $best; # optimize, this path is already long
+#        next if $st->{level} == $best; # optimize, this path is already long
 
         for my $dx (-1..1)
         {
@@ -144,23 +129,25 @@ PERM: while (my $nd = $it->next)
 
 }
 
+
+@nodes = (1..$maxv);
+$it = permutations(\@nodes);
+PERM: while (my $nd = $it->next)
+{
+    unshift(@$nd, 0);
+
+    my $d = 0;
+    for my $i (0..$maxv-1)
+    {
+        $d += $distance->{$nd->[$i],$nd->[$i+1]};
+    }
+
+    if ($d < $best)
+    {
+        $best = $d;
+        print "Best ($d): ".join("",@$nd)."\n";
+    }
+}
+
+
 print "Stage 1: $best\n";
-# for my $y (0..$maxy)
-# {
-#     for my $x (0..$maxx)
-#     {
-#         my $k = $x*$x + 3*$x + 2*$x*$y + $y + $y*$y;
-#         $k += $designer;
-
-# #        printf "$x $y $k %b %s\n", $k, bits($k);
-
-#         my $c = bits($k) % 2 == 0 ? "." : "#";
-
-#         $map->{$x,$y} = $c;
-
-#         $c = "${RED}X$RST" if $x == $destx && $y == $desty;
-#         print "$c";
-#     }
-
-#     print "\n";
-# }
