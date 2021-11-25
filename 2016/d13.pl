@@ -20,8 +20,10 @@ my $desty = 39;
 # $destx = 7;
 # $desty = 4;
 
-my $maxx = $destx + 10;
-my $maxy = $desty + 10;
+my $maxx = $destx + 20;
+my $maxy = $desty + 20;
+
+my $reachable = 0;
 
 sub bits($)
 {
@@ -75,9 +77,12 @@ while (1)
 
     print "$state->{level}: $state->{x} $state->{y}\n";
 
+    $reachable++ if $state->{level} <= 50; # assume stage1 result is larger!
+
     if ($state->{x} == $destx && $state->{y} == $desty)
     {
         print "Stage 1: $state->{level} $state->{path}\n";
+        print "Stage 2: $reachable\n";
         exit;        
     }
 
