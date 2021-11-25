@@ -45,7 +45,6 @@ print "maxv = $maxv\n";
 
 my $distance;
 
-my $best = $maxx * $maxy * $maxv;
 my @nodes = (0..$maxv);
 
 my $it = combinations(\@nodes, 2);
@@ -130,24 +129,29 @@ COMB: while (my $nd = $it->next)
 }
 
 
-@nodes = (1..$maxv);
-$it = permutations(\@nodes);
-PERM: while (my $nd = $it->next)
+for my $stage (1..2)
 {
-    unshift(@$nd, 0);
-
-    my $d = 0;
-    for my $i (0..$maxv-1)
+    my $best = $maxx * $maxy * $maxv;
+    @nodes = (1..$maxv);
+    $it = permutations(\@nodes);
+    PERM: while (my $nd = $it->next)
     {
-        $d += $distance->{$nd->[$i],$nd->[$i+1]};
+        unshift(@$nd, 0);
+        push(@$nd, 0) if $stage == 2;
+
+        my $d = 0;
+        for my $i (0..scalar(@$nd)-2)
+        {
+            $d += $distance->{$nd->[$i],$nd->[$i+1]};
+        }
+
+        if ($d < $best)
+        {
+            $best = $d;
+            print "Best ($d): ".join("",@$nd)."\n";
+        }
     }
 
-    if ($d < $best)
-    {
-        $best = $d;
-        print "Best ($d): ".join("",@$nd)."\n";
-    }
+
+    print "Stage $stage: $best\n";
 }
-
-
-print "Stage 1: $best\n";
