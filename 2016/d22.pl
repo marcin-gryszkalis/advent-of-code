@@ -39,6 +39,9 @@ for (@ff)
 my $goal = $df->{$maxx}->{0}->{id};
 print "We want to move data from ($maxx,0) = $goal to (0,0)\n";
 
+my $state;
+my $emptyspace; # capacity of empty node
+
 my $c = 0;
 my $adj = 0;
 # my $it = variations([keys %$df], 2); - when "x:y" was used as $df key
@@ -52,8 +55,9 @@ for my $ax (0..$maxx)
             {
                 if ($df->{$ax}->{$ay}->{used} == 0) # remember empty node for stage2, assume there's only 1 such node
                 {
-                    $df->{emptyx} = $ax;
-                    $df->{emptyy} = $ay;
+                    $state->{emptyx} = $ax;
+                    $state->{emptyy} = $ay;
+                    $emptyspace = $df->{$ax}->{$ay}->{avail};
                 }
 
                 # Node A is not empty (its Used is not zero).
@@ -76,54 +80,75 @@ for my $ax (0..$maxx)
         }
     }
 }
+
+my $stuck; # nodes that are too big to fit in empty node
+for my $ax (0..$maxx)
+{
+    for my $ay (0..$maxy)
+    {
+        if ($df->{$ax}->{$ay}->{used} > $emptyspace)
+        {
+            $stuck->{$df->{$ax}->{$ay}->{id}} = 1;
+        }
+    }
+}
+
 print "Stage 1: $c\n";
 print "Adj: $adj\n";
 
-# print Dumper $df;
-
-# calc initial hash
-sub xhash($)
+# Print the map to solve by hand :)
+for my $ax (0..$maxx)
 {
-    my $xdf = shift;
-    my $h = '';
-    for my $ax (0..$maxx)
+    for my $ay (0..$maxy)
     {
-        for my $ay (0..$maxy)
+        if ($stuck->{$df->{$ax}->{$ay}->{id}})
         {
-            $h .= $xdf->{$ax}->{$ay}->{id};
+            print "|| ";
+        }
+        elsif ($df->{$ax}->{$ay}->{used} == 0)
+        {
+            print "## ";
+        }
+        else
+        {
+            print "$df->{$ax}->{$ay}->{used} ";
         }
     }
-    return $h;
+    print "\n";
 }
 
-my $h = xhash($df);
-print "$h\n";
+# Below we have simple BFS but path is much too long (~200) while the BFS eats
+# few gigs of mem at ~20 steps. A* would do better probably...
 
-# alternatively:
-my $h2 = '';
+# calculate initial hash
+my $h = '';
 for my $i (0..(($maxx+1)*($maxy+1)-1))
 {
-    $h2 .= sprintf("%02s", $b62->to_base($i++));
+    $h .= sprintf("%02s", $b62->to_base($i++));
 }
-print "$h2\n";
 
-$df->{hash} = $h;
-$df->{level} = 0;
+$state->{hash} = $h;
+$state->{level} = 0;
 
 my $visited;
 $visited->{$h} = 1;
 
 my @stateq = (); # bfs queue
-push(@stateq, clone($df));
+push(@stateq, clone($state));
 
+my $loop = 0;
 while (1)
 {
-    my $xdf = shift(@stateq);
-    die unless defined $xdf;
+    $loop++;
+
+    my $xstate = shift(@stateq);
+    die unless defined $xstate; # empty queue
+
+    print "$loop: level=$xstate->{level}\n" if $loop % 1000 == 0;
 
     # find possible moves
-    my $dx = $xdf->{emptyx}; # destination
-    my $dy = $xdf->{emptyy};
+    my $dx = $xstate->{emptyx}; # destination
+    my $dy = $xstate->{emptyy};
 
     for my $zx (-1..1)
     {
@@ -136,46 +161,32 @@ while (1)
             my $sy = $dy + $zy;
             next if $sy < 0 || $sy > $maxy;
 
-            my $ndf = clone($xdf);
-
-            # swap source and destination
-            my $e = $ndf->{$sx}->{$sy}->{id};
-            $ndf->{$sx}->{$sy}->{id} = $ndf->{$dx}->{$dy}->{id};
-            $ndf->{$dx}->{$dy}->{id} = $e;
-
-            my $newhash = xhash($ndf);
-            print "$ndf->{level}: ($sx,$sy) <-> ($dx,$dy):\n$newhash\n";
-
             # swap directly in hash
-            my $oh = $ndf->{hash};
+            my $oh = $xstate->{hash};
             my $spos = ($sx * ($maxy+1) + $sy) * 2;
             my $dpos = ($dx * ($maxy+1) + $dy) * 2;
-print "spos($spos), dpos($dpos)\n";
-            my $s = substr($oh, $dpos, 2);
-            substr($oh, $dpos, 2) = substr($oh, $spos, 2);
-            substr($oh, $spos, 2) = $s;
 
-            die "wrong: $newhash NE $oh\n" unless $newhash eq $oh;
+            my $s = substr($oh, $spos, 2);
+            next if exists $stuck->{$s}; # large node, skip
+            substr($oh, $spos, 2) = substr($oh, $dpos, 2);
+            substr($oh, $dpos, 2) = $s;
 
-#             print Dumper $ndf;
-
-            if (substr($newhash, 0, 2) eq $goal)
+            if (substr($oh, 0, 2) eq $goal)
             {
-                my $finallevel = $ndf->{level} + 1;
-                print "moved!\nlevel=finallevel\n$newhash\n";
+                my $finallevel = $xstate->{level} + 1;
+                print "Stage 2: level=$finallevel\n$oh\n";
                 exit;
             }
 
-            next if $visited->{$newhash};
-            $visited->{$newhash} = 1;
-            $ndf->{hash} = $newhash;
-            $ndf->{level}++;
-            $ndf->{emptyx} = $sx;
-            $ndf->{emptyy} = $sy;
-            push(@stateq, $ndf);
+            next if $visited->{$oh};
+            $visited->{$oh} = 1;
 
-            #exit;
+            my $nstate = clone($xstate);
+            $nstate->{hash} = $oh;
+            $nstate->{level}++;
+            $nstate->{emptyx} = $sx;
+            $nstate->{emptyy} = $sy;
+            push(@stateq, $nstate);
         }
     }
 }
-# my $init = clone($a);
