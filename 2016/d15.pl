@@ -10,7 +10,6 @@ use Clone qw/clone/;
 
 my $discs;
 
-# Disc #1 has 13 positions; at time=0, it is at position 10.
 while (<>)
 {
     next unless m/Disc #(\d+) has (\d+) positions; at time=0, it is at position (\d+)./;
@@ -20,16 +19,24 @@ while (<>)
 
 my $N = max(keys %$discs);
 
-my $t = 0;
-LOOP: while (1)
+for my $stage (1..2)
 {
-    $t++;
-
-    for my $d (1..$N)
+    my $t = 0;
+    LOOP: while (1)
     {
-        next LOOP if ($discs->{$d}->{start} + $t + $d) % $discs->{$d}->{positions} > 0;
+        $t++;
+
+        for my $d (1..$N)
+        {
+            next LOOP if ($discs->{$d}->{start} + $t + $d) % $discs->{$d}->{positions} > 0;
+        }
+
+        print "Stage $stage: $t\n";
+        last;
     }
 
-    print "Stage 1: $t\n";
-    exit;
+    # stage 2 adds one disc
+    $N++;
+    $discs->{$N}->{positions} = 11;
+    $discs->{$N}->{start} = 0;
 }
