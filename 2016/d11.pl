@@ -16,7 +16,10 @@ fourth 4/;
 my $maxfloor = 4;
 
 my @ff = read_file(\*STDIN);
-@ff = map { chomp; $_ } @ff;
+@ff = map {
+    chomp;
+    s/promethium/qpromethium/g; # promethium & plutonium - pure evil!
+    $_ } @ff;
 
 my $map;
 # The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
@@ -30,6 +33,13 @@ for (@ff)
 }
 
 $map->{EE} = 1;
+
+# stage 2:
+# $map->{UG} = 1;
+# $map->{UM} = 1;
+# $map->{WG} = 1;
+# $map->{WM} = 1;
+
 
 
 sub hashmap($)
@@ -75,16 +85,24 @@ push(@sq, clone($state));
 
 my $visited->{$state->{hash}} = 1;
 
+my $best = 1000;
+my $cnt = 0;
 while (1)
 {
-    $state = shift(@sq);
+    $cnt++;
 
-    # print draw2str($state); # if ($state->{hash} eq '44433');
+    # $state = shift(@sq);
+    $state = pop(@sq);
+
+    print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 1000 == 0;
+    # print draw2str($state);
 
     if ($state->{hash} =~ /^${maxfloor}+$/) # all on 4th floor :)
     {
-        print "Stage 1: $state->{level}\n";
         print $state->{path};
+        print "Found: $state->{level}\n";
+        $best = $state->{level};
+#        next;
         exit;
     }
 
