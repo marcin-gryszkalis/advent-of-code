@@ -7,6 +7,10 @@ use List::MoreUtils qw(uniq);
 use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations);
 use Clone qw/clone/;
+use Tie::Array::Sorted;
+
+# This is  DFS version with A*, quick to find good solution, slow to find best
+# about 7x slower than unoptimized BFS for stage 1
 
 my %nummap = qw/
 first 1
@@ -40,8 +44,6 @@ $map->{EE} = 1;
 # $map->{WG} = 1;
 # $map->{WM} = 1;
 
-
-
 sub hashmap($)
 {
     my $xmap = shift;
@@ -51,6 +53,39 @@ sub hashmap($)
         $h .= $xmap->{$k};
     }
     return $h;
+}
+
+# simple sum of levels
+sub starfunc_floorsum($)
+{
+    my $xmap = shift;
+    my $s = 0;
+    for my $k (sort keys %$xmap)
+    {
+        $s += $xmap->{$k};
+    }
+    return $s;
+}
+
+# better?
+# mutiple floor of microchip and floor of generator (prefer moving pairs)
+sub starfunc2($)
+{
+    my $xmap = shift;
+    my $s = 0;
+    for my $k (sort keys %$xmap)
+    {
+        next if $k eq '--';
+        if ($k eq 'EE')
+        {
+            $s += $xmap->{$k};
+            next;
+        }
+        next if substr($k, 1, 1) eq 'G';
+        my $kg = substr($k, 0, 1)."G";
+        $s += $xmap->{$k} * $xmap->{$kg};
+    }
+    return $s;
 }
 
 sub draw2str($)
@@ -79,31 +114,40 @@ my $state;
 $state->{map} = clone($map);
 $state->{level} = 0;
 $state->{hash} = hashmap($state->{map});
+$state->{starfunc} = starfunc2($state->{map});
 $state->{path} = draw2str($state);
+
 my @sq;
+tie @sq, "Tie::Array::Sorted", sub { $_[1]->{starfunc} <=> $_[0]->{starfunc} };
+
 push(@sq, clone($state));
 
-my $visited->{$state->{hash}} = 1;
+my $visited->{$state->{hash}} = 0;
 
-my $best = 1000;
+my $best = 1000; # hope 1000 is enough to cut
 my $cnt = 0;
 while (1)
 {
     $cnt++;
 
-    # $state = shift(@sq);
-    $state = pop(@sq);
+    $state = shift(@sq);
+    if (!defined $state)
+    {
+        print "Best: $best\n";
+        exit;
+    }
+
+    next if $state->{level} >= $best;
 
     print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 1000 == 0;
     # print draw2str($state);
 
     if ($state->{hash} =~ /^${maxfloor}+$/) # all on 4th floor :)
     {
-        print $state->{path};
+#        print $state->{path};
         print "Found: $state->{level}\n";
         $best = $state->{level};
-#        next;
-        exit;
+        next;
     }
 
     my $srcf = $state->{map}->{EE};
@@ -124,6 +168,8 @@ while (1)
         {
             my $nstate = clone($state);
             $nstate->{map}->{EE} = $dstf;
+            $nstate->{level}++;
+            next if $nstate->{level} > $best;
 
             # check for conflict in elevator
             next if $ps->[0] eq '--' && $ps->[1] eq '--'; # elevator needs at least 1 item
@@ -143,16 +189,10 @@ while (1)
                 $nstate->{map}->{$p} = $dstf unless $p eq '--';
             }
 
-            # if ($state->{hash} eq '44433')
-            # {
-            #     print "$srcf -> $dstf : $ps->[0] $ps->[1]\n";
-            #     print draw2str($nstate);
-            # }
-
             my $h = hashmap($nstate->{map});
-            next if exists $visited->{$h}; # we've been here anyway
+            next if exists $visited->{$h} && $visited->{$h} <= $nstate->{level}; # we've been here, and we've been earlier (or at the same level)
 
-            $visited->{$h} = 1; # we may skip this version as well, but this would save us checking for conflicts
+            $visited->{$h} = $nstate->{level}; # we may skip this version as well, but this would save us checking for conflicts
 
             # now check for conflicts at destination floor AND src floor
             for my $floorcheck ($srcf, $dstf)
@@ -180,8 +220,8 @@ while (1)
             }
 
             # no conflicts, hurray!
-            $nstate->{level}++;
             $nstate->{hash} = $h;
+            $nstate->{starfunc} = starfunc2($nstate->{map});
             $nstate->{path} .= draw2str($nstate);
             push(@sq, $nstate);
         }
