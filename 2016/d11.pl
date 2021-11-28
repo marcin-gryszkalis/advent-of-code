@@ -135,11 +135,11 @@ while (1)
     $state = shift(@sq);
     die unless defined $state;
 
-    print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 100 == 0;
+    print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 1000 == 0;
 
     if ($state->{hash} =~ /^${maxfloor}+$/) # all on 4th floor :)
     {
-#        print $state->{path};
+        print $state->{path};
         print "Found: $state->{level}\n";
         exit;
     }
