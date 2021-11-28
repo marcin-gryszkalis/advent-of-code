@@ -9,8 +9,7 @@ use Algorithm::Combinatorics qw(combinations permutations);
 use Clone qw/clone/;
 use Tie::Array::Sorted;
 
-# This is  DFS version with A*, quick to find good solution, slow to find best
-# about 7x slower than unoptimized BFS for stage 1
+# This is BFS version
 
 my %nummap = qw/
 first 1
@@ -118,42 +117,45 @@ $state->{starfunc} = starfunc2($state->{map});
 $state->{path} = draw2str($state);
 
 my @sq;
-tie @sq, "Tie::Array::Sorted", sub { $_[1]->{starfunc} <=> $_[0]->{starfunc} };
-
 push(@sq, clone($state));
 
-my $visited->{$state->{hash}} = 0;
+my $visited->{$state->{hash}} = 1;
 
-my $best = 1000; # hope 1000 is enough to cut
 my $cnt = 0;
 while (1)
 {
     $cnt++;
 
     $state = shift(@sq);
-    if (!defined $state)
-    {
-        print "Best: $best\n";
-        exit;
-    }
-
-    next if $state->{level} >= $best;
+    die unless defined $state;
 
     print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 1000 == 0;
-    # print draw2str($state);
 
     if ($state->{hash} =~ /^${maxfloor}+$/) # all on 4th floor :)
     {
 #        print $state->{path};
         print "Found: $state->{level}\n";
-        $best = $state->{level};
-        next;
+        exit;
     }
 
     my $srcf = $state->{map}->{EE};
+
+    # check for empty floors below (don't go back there)
+    my $emptyfloor = undef;
+    EFCK: for my $ef (1..$srcf-1)
+    {
+        for my $k (keys %{$state->{map}})
+        {
+            last EFCK if $state->{map}->{$k} == $ef;
+        }
+
+        $emptyfloor->{$ef} = 1;
+    }
+
     for my $dstf (max(1, $srcf - 1)..min($maxfloor, $srcf + 1))
     {
         next if $dstf == $srcf;
+        next if $emptyfloor->{$dstf};
 
         my @srcitems = ();
         for my $k (sort keys %{$state->{map}})
@@ -169,7 +171,6 @@ while (1)
             my $nstate = clone($state);
             $nstate->{map}->{EE} = $dstf;
             $nstate->{level}++;
-            next if $nstate->{level} > $best;
 
             # check for conflict in elevator
             next if $ps->[0] eq '--' && $ps->[1] eq '--'; # elevator needs at least 1 item
