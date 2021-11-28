@@ -10,7 +10,9 @@ use Clone qw/clone/;
 use Tie::Array::Sorted;
 
 # This is DFS version with A*-kind sorting, quick to find good solution, slow to find best
-# about 7x slower than unoptimized BFS for stage 1
+# about 10x slower than unoptimized BFS for stage 1
+# with optimized hash function it has acceptable speed (still 10x slower)
+# it also has to check 10x number of states
 
 my %nummap = qw/
 first 1
@@ -39,10 +41,10 @@ for (@ff)
 $map->{EE} = 1;
 
 # stage 2:
-# $map->{UG} = 1;
-# $map->{UM} = 1;
-# $map->{WG} = 1;
-# $map->{WM} = 1;
+$map->{UG} = 1;
+$map->{UM} = 1;
+$map->{WG} = 1;
+$map->{WM} = 1;
 
 sub hashmap($)
 {
@@ -52,6 +54,11 @@ sub hashmap($)
     {
         $h .= $xmap->{$k};
     }
+
+    # sort contents to make pair interchangeable (most important optimization!)
+    my @hvao = grep { $_ } split/(..)/, substr($h, 1); # split into 2-letter chunks, no EE which we assume is first
+    $h = substr($h, 0, 1).join("",sort(@hvao));
+
     return $h;
 }
 
