@@ -38,10 +38,10 @@ for (@ff)
 $map->{EE} = 1;
 
 # stage 2:
-# $map->{UG} = 1;
-# $map->{UM} = 1;
-# $map->{WG} = 1;
-# $map->{WM} = 1;
+$map->{UG} = 1;
+$map->{UM} = 1;
+$map->{WG} = 1;
+$map->{WM} = 1;
 
 sub hashmap($)
 {
@@ -51,8 +51,14 @@ sub hashmap($)
     {
         $h .= $xmap->{$k};
     }
+
+    # sort contents to make pair interchangeable (most important optimization!)
+    my @hvao = grep { $_ } split/(..)/, substr($h, 1); # split into 2-letter chunks, no EE which we assume is first
+    $h = substr($h, 0, 1).join("",sort(@hvao));
+
     return $h;
 }
+
 
 # simple sum of levels
 sub starfunc_floorsum($)
@@ -129,7 +135,7 @@ while (1)
     $state = shift(@sq);
     die unless defined $state;
 
-    print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 1000 == 0;
+    print "$cnt: level($state->{level}) queue(".scalar(@sq).")\n" if $cnt % 100 == 0;
 
     if ($state->{hash} =~ /^${maxfloor}+$/) # all on 4th floor :)
     {
@@ -191,7 +197,7 @@ while (1)
             }
 
             my $h = hashmap($nstate->{map});
-            next if exists $visited->{$h} && $visited->{$h} <= $nstate->{level}; # we've been here, and we've been earlier (or at the same level)
+            next if exists $visited->{$h}; # we've been here
 
             $visited->{$h} = $nstate->{level}; # we may skip this version as well, but this would save us checking for conflicts
 
