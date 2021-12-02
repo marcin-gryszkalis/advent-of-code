@@ -30,8 +30,8 @@ for my $stage (1..2)
     {
         for $_ (@f)
         {
-            $d += $a * $1 if /forward (\d+)/;
             $h += $1 if /forward (\d+)/;
+            $d += $a * $1 if /forward (\d+)/;
             $a += $1 if /down (\d+)/;
             $a -= $1 if /up (\d+)/;
         }
