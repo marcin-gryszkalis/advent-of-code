@@ -30,29 +30,17 @@ $e =~ tr/01/10/;
 $stage1 = oct("0b".$g) * oct("0b".$e);
 
 my @r;
-for my $rn (0..1)
+for my $rn (0..1) # rating number
 {
     my @f2 = @{clone([@f])};
 
     my $pos = 0;
-    my $or;
     while(1)
     {
-        my @c;
-        my $cc = 0;
-        for (@f2)
-        {
-            my @a = split//;
-            $cc += $a[$pos];
-        }
-
+        my $cc = sum(map { substr($_, $pos, 1) } @f2);
         my $l = scalar(@f2) / 2;
-        my $mcb = $cc >= $l ? 1 : 0;
-        $mcb =~ tr/01/10/ if $rn == 1;
-        my $pat = "^".("." x $pos).$mcb;
-        @f2 = grep { /$pat/ } @f2;
-        # print Dumper \@f2;
-        # print scalar(@f2)."\n";
+        my $mcb = ($cc >= $l ? 1 : 0) ^ $rn;
+        @f2 = grep { substr($_, $pos, 1) eq $mcb } @f2;
         if (scalar(@f2) == 1)
         {
             push(@r, pop(@f2));
@@ -65,5 +53,6 @@ for my $rn (0..1)
 }
 
 $stage2 = oct("0b".pop(@r)) * oct("0b".pop(@r));
+
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
