@@ -1,4 +1,4 @@
- #!/usr/bin/perl
+#!/usr/bin/perl
 use warnings;
 use strict;
 use Data::Dumper;
@@ -19,70 +19,52 @@ my @b = split/,/, shift @f;
 my $t; # tables
 my $h; # hits
 my $bc = scalar(@f) / 5;
-
-for my $tn (0..$bc-1)
+my %ts;
+for my $tn (1..$bc)
 {
-    my $tab = ();
+    $ts{$tn} = 1;
     for my $x (0..4)
     {
         my @r = (shift(@f) =~ /\d+/g);
         for my $y (0..4)
         {
             $t->{$tn}->{$x,$y} = $r[$y];
-            $h->{$tn}->{$x,$y} = 0;
         }
     }
 }
 
-my $wnb;
-LOOP: while (1)
+for my $n (@b)
 {
-    my $n = shift @b;
-    last unless defined $n;
-
-    for my $tn (0..$bc-1)
+    for my $tn (keys %ts)
     {
         for my $x (0..4)
         {
             for my $y (0..4)
             {
-                $h->{$tn}->{$x,$y} = 1 if $t->{$tn}->{$x,$y} == $n;
+                if (($t->{$tn}->{$x,$y} // -1) == $n)
+                {
+                    $h->{$tn}->{"x$x"}++;
+                    $h->{$tn}->{"y$y"}++;
+                    delete $t->{$tn}->{$x,$y};
+                }
             }
         }
     }
 
-    for my $tn (0..$bc-1)
+    T: for my $tn (sort { $a <=> $b } keys %ts)
     {
-        next if exists $wnb->{$tn};
-        for my $x (0..4)
+        if (any { $_ == 5 } values %{$h->{$tn}})
         {
-            my $sx = 0;
-            my $sy = 0;
-            for my $y (0..4)
-            {
-                $sx += $h->{$tn}->{$x,$y};
-                $sy += $h->{$tn}->{$y,$x};
-            }
-
-            if ($sx == 5 || $sy == 5)
-            {
-                my $r = 0;
-                for my $xx (0..4)
-                {
-                    for my $yy (0..4)
-                    {
-                        $r += $t->{$tn}->{$xx,$yy} if $h->{$tn}->{$xx,$yy} == 0;
-                    }
-                }
-
-                $stage1 = $r * $n if $stage1 == 0;
-                $stage2 = $r * $n;
-                $wnb->{$tn} = 1;
-            }
-
+            my $r = sum(values(%{$t->{$tn}}));
+            $stage1 = $r * $n if $stage1 == 0;
+            $stage2 = $r * $n;
+#            print "n($n) tn($tn) r($r)\n";
+            delete $ts{$tn};
+            next T;
         }
     }
 
 }
+
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
