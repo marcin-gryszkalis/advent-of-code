@@ -15,15 +15,15 @@ for my $stage (1..2)
     my $h = undef;
     for (@f)
     {
-        if (my ($x1,$y1,$x2,$y2) = /(\d+),(\d+).*?(\d+),(\d+)/)
+        if (my ($x1,$y1,$x2,$y2) = /(\d+)/g)
         {
-            my $dx = $x1 == $x2 ? 0 : $x1 > $x2 ? -1 : 1;
-            my $dy = $y1 == $y2 ? 0 : $y1 > $y2 ? -1 : 1;
+            my $dx = $x2 <=> $x1;
+            my $dy = $y2 <=> $y1;
 
-            next if $stage == 1 && $x1 != $x2 && $y1 != $y2;
+            next if $stage == 1 && $dx && $dy;
 
-            my $y = $y1;
             my $x = $x1;
+            my $y = $y1;
             while (1)
             {
                 $h->{$x,$y}++;
