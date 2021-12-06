@@ -14,17 +14,17 @@ my @f = split/,/, $ff;
 
 for my $stage (1..2)
 {
-    my %h = ();
-    $h{$_} = 0 for (0..8);
-    $h{$_}++ for (@f);
+    my @h = (0) x 9;
+    $h[$_] = 0 for (0..8);
+    $h[$_]++ for (@f);
 
     for my $d (1..$dps[$stage - 1])
     {
-        my $z = $h{0};
-        $h{$_} = $h{$_+1} for (0..7);
-        $h{6} += $z;
-        $h{8} = $z;
+        my $z = $h[0];
+        $h[$_] = $h[$_+1] for (0..7);
+        $h[6] += $z;
+        $h[8] = $z;
     }
 
-    printf "Stage %d: %s\n", $stage, sum(values(%h));
+    printf "Stage %d: %s\n", $stage, sum(@h);
 }
