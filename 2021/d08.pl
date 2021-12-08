@@ -17,6 +17,8 @@ my %rm = map { $_ => $i++ } @dm;
 my $stage1 = 0;
 my $stage2 = 0;
 
+my @ff = split//,"abcdefg";
+
 for (@f)
 {
     my @sp = split/\|/, $_;
@@ -37,14 +39,16 @@ for (@f)
     {
         my $m = join("", @$v);
 
+        my @tt = split//,$m;
+        my %fth = map { $ff[$_] => $tt[$_] } 0..$#ff;
+
         my %t = ();
         for my $p (@all)
         {
             my $q = $p;
-            eval "\$q =~ tr/abcdefg/$m/";
-            $q = join("", sort(split//, $q));
+            #eval "\$q =~ tr/abcdefg/$m/"; -- eval is required fo tr/// with interpolation, hash is 100% faster
+            $q = join("", sort map { $fth{$_} } split(//,$p));
 
-            # print "p($m) $p -> $q\n";
             next P unless exists $rm{$q};
             $t{$p} = $rm{$q};
         }
