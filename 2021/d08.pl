@@ -17,7 +17,7 @@ my %rm = map { $_ => $i++ } @dm;
 my $stage1 = 0;
 my $stage2 = 0;
 
-my @ff = split//,"abcdefg";
+my @ff = ('a'..'g');
 
 for (@f)
 {
@@ -28,13 +28,12 @@ for (@f)
     @in = map { join("", sort(split//)) } @in;
     @out = map { join("", sort(split//)) } @out;
     my @all = (@in, @out);
-    @all = sort { length($a) <=> length($b)} @all;
+    @all = sort { length($a) <=> length($b) } @all;
 
     my @sx = grep { length($_) == length($dm[1]) || length($_) == length($dm[4]) || length($_) == length($dm[7]) || length($_) == length($dm[8]) } @out;
     $stage1 += scalar(@sx);
 
-    my @dperm = ('a'..'g');
-    my $itv = permutations(\@dperm);
+    my $itv = permutations(\@ff);
     P: while (my $v = $itv->next)
     {
         my $m = join("", @$v);
@@ -45,9 +44,8 @@ for (@f)
         my %t = ();
         for my $p (@all)
         {
-            my $q = $p;
-            #eval "\$q =~ tr/abcdefg/$m/"; -- eval is required fo tr/// with interpolation, hash is 100% faster
-            $q = join("", sort map { $fth{$_} } split(//,$p));
+            #eval "\$q = (\$p =~ tr/abcdefg/$m/)"; -- eval is required for tr/// with $m interpolation, hash is 100% faster
+            my $q = join("", sort map { $fth{$_} } split(//,$p));
 
             next P unless exists $rm{$q};
             $t{$p} = $rm{$q};
