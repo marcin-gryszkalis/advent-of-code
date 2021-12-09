@@ -19,21 +19,20 @@ my $maxy = 0;
 my $y = 0;
 for (@f)
 {
-    my @g = split//;
     my $x = 0;
-    for my $a (@g)
+    for my $a (split//)
     {
         $h->{$x++,$y} = $a;
     }
-    $maxx = $x;
+    $maxx = $x - 1;
     $y++;
 }
-$maxy= $y;
+$maxy = $y - 1;
 
 
-for my $y (0..$maxy-1)
+for my $y (0..$maxy)
 {
-    for my $x (0..$maxx-1)
+    for my $x (0..$maxx)
     {
          $stage1 += $h->{$x,$y} + 1 if
             $h->{$x,$y} < ($h->{$x-1,$y} // 10) &&
@@ -54,9 +53,9 @@ while (1)
 {
     my $sx = -1;
     my $sy = -1;
-    SL: for my $ssx (0..$maxx-1)
+    SL: for my $ssx (0..$maxx)
     {
-        for my $ssy (0..$maxy-1)
+        for my $ssy (0..$maxy)
         {
             unless (exists $p->{$ssx,$ssy})
             {
@@ -71,7 +70,7 @@ while (1)
     $pi++;
     my @sq = ();
 
-    my $e = undef;
+    my $e;
     $e->{x} = $sx;
     $e->{y} = $sy;
     push(@sq, $e);
@@ -88,13 +87,15 @@ while (1)
             for my $dx (-1..1)
             {
                 next if abs($dx) + abs($dy) != 1;
-                next if $e->{x}+$dx < 0 || $e->{x}+$dx >= $maxx;
-                next if $e->{y}+$dy < 0 || $e->{y}+$dy >= $maxy;
-                next if exists $p->{$e->{x}+$dx,$e->{y}+$dy};
+                my $xdx = $e->{x} + $dx;
+                my $ydy = $e->{y} + $dy;
+                next if $xdx < 0 || $xdx > $maxx;
+                next if $ydy < 0 || $ydy > $maxy;
+                next if exists $p->{$xdx,$ydy};
 
-                my $ee = undef;
-                $ee->{x} = $e->{x}+$dx;
-                $ee->{y} = $e->{y}+$dy;
+                my $ee;
+                $ee->{x} = $xdx;
+                $ee->{y} = $ydy;
                 push(@sq, $ee);
             }
         }
@@ -102,13 +103,10 @@ while (1)
 }
 
 my %cnt;
-for my $v (values %$p)
-{
-    $cnt{$v}++;
-}
+$cnt{$_}++ for values %$p;
 
 my @d = sort { $b <=> $a } values %cnt;
-$stage2 = $d[1] * $d[2] * $d[3];
+$stage2 = $d[1] * $d[2] * $d[3]; # $d[0] -- high points (9)
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
