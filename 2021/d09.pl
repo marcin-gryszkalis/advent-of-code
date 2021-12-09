@@ -95,7 +95,7 @@ for my $sx (0..$maxx)
 }
 
 my @d = sort { $b <=> $a } values %cnt;
-$stage2 = $d[0] * $d[1] * $d[2];
+$stage2 = product(@d[0..2]);
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
