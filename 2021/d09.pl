@@ -48,65 +48,54 @@ for my $k (keys %$h)
     $p->{$k} = 0 if $h->{$k} == 9;
 }
 
+my %cnt;
 my $pi = 0;
-while (1)
+for my $sx (0..$maxx)
 {
-    my $sx = -1;
-    my $sy = -1;
-    SL: for my $ssx (0..$maxx)
+    for my $sy (0..$maxy)
     {
-        for my $ssy (0..$maxy)
+        next if exists $p->{$sx,$sy};
+
+        $pi++;
+        my @sq = ();
+
+        my $e;
+        $e->{x} = $sx;
+        $e->{y} = $sy;
+        push(@sq, $e);
+        $p->{$sx,$sy} = $pi;
+        $cnt{$pi}++;
+
+        while (1)
         {
-            unless (exists $p->{$ssx,$ssy})
+            $e = shift(@sq);
+            last unless defined $e;
+
+            for my $dy (-1..1)
             {
-                $sx = $ssx;
-                $sy = $ssy;
-                last SL;
-            }
-        }
-    }
-    last if $sx == -1 && $sy == -1;
+                for my $dx (-1..1)
+                {
+                    next if abs($dx) + abs($dy) != 1;
+                    my $xdx = $e->{x} + $dx;
+                    my $ydy = $e->{y} + $dy;
+                    next if $xdx < 0 || $xdx > $maxx;
+                    next if $ydy < 0 || $ydy > $maxy;
+                    next if exists $p->{$xdx,$ydy};
 
-    $pi++;
-    my @sq = ();
-
-    my $e;
-    $e->{x} = $sx;
-    $e->{y} = $sy;
-    push(@sq, $e);
-
-    while (1)
-    {
-        $e = pop(@sq);
-        last unless defined $e;
-
-        $p->{$e->{x},$e->{y}} = $pi;
-
-        for my $dy (-1..1)
-        {
-            for my $dx (-1..1)
-            {
-                next if abs($dx) + abs($dy) != 1;
-                my $xdx = $e->{x} + $dx;
-                my $ydy = $e->{y} + $dy;
-                next if $xdx < 0 || $xdx > $maxx;
-                next if $ydy < 0 || $ydy > $maxy;
-                next if exists $p->{$xdx,$ydy};
-
-                my $ee;
-                $ee->{x} = $xdx;
-                $ee->{y} = $ydy;
-                push(@sq, $ee);
+                    my $ee;
+                    $ee->{x} = $xdx;
+                    $ee->{y} = $ydy;
+                    push(@sq, $ee);
+                    $p->{$xdx,$ydy} = $pi;
+                    $cnt{$pi}++;
+                }
             }
         }
     }
 }
 
-my %cnt;
-$cnt{$_}++ for values %$p;
-
 my @d = sort { $b <=> $a } values %cnt;
-$stage2 = $d[1] * $d[2] * $d[3]; # $d[0] -- high points (9)
+$stage2 = $d[0] * $d[1] * $d[2];
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
