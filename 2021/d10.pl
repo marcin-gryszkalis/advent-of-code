@@ -31,12 +31,12 @@ my @s2s;
 for (@f)
 {
     redo if
-    s/\[\s*?\]//g ||
-    s/\(\s*?\)//g ||
-    s/\{\s*?\}//g ||
-    s/\<\s*?\>//g;
+    s/\[\]//g ||
+    s/\(\)//g ||
+    s/\{\}//g ||
+    s/\<\>//g;
 
-    next if /^$/;
+    next if /^$/; # valid
 
     if (/^[\[\(\{\<]+$/) # incomplete
     {
