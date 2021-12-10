@@ -21,8 +21,7 @@ my %v2 = qw/
 < 4
 /;
 
-my @f = read_file(\*STDIN);
-@f = map { chomp; $_ } @f;
+my @f = read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
 my $stage2 = 0;
@@ -30,12 +29,7 @@ my $stage2 = 0;
 my @s2s;
 for (@f)
 {
-    redo if
-    s/\[\]//g ||
-    s/\(\)//g ||
-    s/\{\}//g ||
-    s/\<\>//g;
-
+    redo if s/(\[\]|\(\)|\{\}|\<\>)//g;
     next if /^$/; # valid
 
     if (/^[\[\(\{\<]+$/) # incomplete
