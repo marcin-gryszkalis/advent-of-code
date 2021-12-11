@@ -34,7 +34,6 @@ while (1)
 
     $o->{$_}++ for keys %$o;
 
-    my $f; # who flashed?
     my $scan = 1;
     while ($scan)
     {
@@ -45,7 +44,6 @@ while (1)
             {
                 if ($o->{$x,$y} > 9)
                 {
-                    $f->{$x,$y} = 1;
                     for my $dx (-1..1)
                     {
                         for my $dy (-1..1)
@@ -54,7 +52,7 @@ while (1)
                             my $x2 = $x + $dx;
                             my $y2 = $y + $dy;
                             next unless exists $o->{$x2,$y2};
-                            next if $f->{$x2,$y2};
+                            next if $o->{$x2,$y2} == 0;
 
                             $o->{$x2,$y2}++;
                             $scan = 1;
@@ -79,7 +77,7 @@ while (1)
     }
     print "\n";
 
-    if (scalar keys %$f == scalar keys %$o)
+    if (sum(values %$o) == 0)
     {
         $stage2 = $step;
         last;
