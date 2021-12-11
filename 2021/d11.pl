@@ -35,7 +35,6 @@ while (1)
     $o->{$_}++ for keys %$o;
 
     my $f; # who flashed?
-    my $fc = 0;
     my $scan = 1;
     while ($scan)
     {
@@ -64,13 +63,12 @@ while (1)
 
                     $o->{$x,$y} = 0;
                     $stage1++ if $step <= 100;
-                    $fc++;
                 }
             }
         }
     }
 
-    print "step: $step, flashed: $fc\n";
+    print "step: $step\n";
     for my $y (0..$maxy)
     {
         for my $x (0..$maxx)
@@ -81,8 +79,7 @@ while (1)
     }
     print "\n";
 
-    #if ($fc == ($maxx+1) * ($maxy+1))
-    if ($fc == scalar keys %$o)
+    if (scalar keys %$f == scalar keys %$o)
     {
         $stage2 = $step;
         last;
