@@ -28,8 +28,6 @@ for my $stage (1..2)
     {
         for my $nb ($g->neighbours($n0->{e}))
         {
-            my $n = clone($n0);
-
             next if $nb eq 'start';
             if ($nb eq 'end')
             {
@@ -38,14 +36,15 @@ for my $stage (1..2)
                 next;
             }
 
+            my $n = clone($n0);
+
             if ($nb =~ /[a-z]/)
             {
                 if (exists $n->{visited}->{$nb})
                 {
                     next if $stage == 1;
-
-                    my @uq = uniq(values %{$n->{visited}});
-                    next if exists $uq[1] || $uq[0] > 1;
+                    next if exists $n->{onedouble};
+                    $n->{onedouble} = 1;
                 }
 
                 $n->{visited}->{$nb}++;
