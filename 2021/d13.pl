@@ -10,7 +10,6 @@ use Clone qw/clone/;
 my @f = read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
-my $stage2 = 0;
 
 my $p;
 my @foldd;
@@ -48,7 +47,6 @@ while (1)
     $stage1 = scalar(keys %$p) if $i++ == 0;
 }
 
-$stage1 = scalar(keys %$p);
 printf "Stage 1: %s\n", $stage1;
 
 my $maxx = 0;
@@ -69,4 +67,3 @@ for my $y (0..$maxy)
     }
     print "\n";
 }
-
