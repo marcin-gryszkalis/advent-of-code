@@ -11,7 +11,7 @@ my @f = read_file(\*STDIN, chomp => 1);
 my $s = shift(@f);
 shift(@f);
 
-my %m = map { /(\S+) -> (\S+)/; $1 => $2; } @f;
+my %m = map { /\w+/g } @f;
 
 my $p0;
 for my $i (0..length($s)-2)
