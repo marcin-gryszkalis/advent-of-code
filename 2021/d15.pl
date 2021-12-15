@@ -19,7 +19,6 @@ my $wx = length($f[0]);
 my $awy = 5 * $wy;
 my $awx = 5 * $wx;
 
-my $o;
 my $y = 0;
 for (@f)
 {
@@ -35,12 +34,10 @@ for (@f)
 
                 my $ae = (($e - 1) + $dx + $dy) % 9 + 1;
 
-                $o->{$ax,$ay} = $ae;
-
                 $g->add_weighted_edge(($ax-1).$;.$ay, "$ax$;$ay", $ae) if $ax > 0;
                 $g->add_weighted_edge($ax.$;.($ay-1), "$ax$;$ay", $ae) if $ay > 0;
-                $g->add_weighted_edge(($ax+1).$;.$ay, "$ax$;$ay", $ae) if $ax < $wx-1;
-                $g->add_weighted_edge($ax.$;.($ay+1), "$ax$;$ay", $ae) if $ay < $wx-1;
+                $g->add_weighted_edge(($ax+1).$;.$ay, "$ax$;$ay", $ae) if $ax < $awx-1;
+                $g->add_weighted_edge($ax.$;.($ay+1), "$ax$;$ay", $ae) if $ay < $awy-1;
             }
         }
 
@@ -49,10 +46,11 @@ for (@f)
     $y++;
 }
 
-$o->{0,0} = 0;
-
 print "vertices: ".scalar($g->vertices)."\n";
 print "edges: ".scalar($g->edges)."\n";
 
-printf "Stage 1: %s\n", sum(map { $o->{$_} } $g->SP_Dijkstra("0$;0", ($wx-1).$;.($wy-1)));;
-printf "Stage 2: %s\n", sum(map { $o->{$_} } $g->SP_Dijkstra("0$;0", ($awx-1).$;.($awy-1)));
+my @p1 = $g->SP_Dijkstra("0$;0", ($wx-1).$;.($wy-1));
+my @p2 = $g->SP_Dijkstra("0$;0", ($awx-1).$;.($awy-1));
+
+printf "Stage 1: %s\n", sum(map { $g->get_edge_weight($p1[$_], $p1[$_+1]) } (0..$#p1-1));
+printf "Stage 2: %s\n", sum(map { $g->get_edge_weight($p2[$_], $p2[$_+1]) } (0..$#p2-1));
