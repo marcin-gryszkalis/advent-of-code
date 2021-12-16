@@ -1,4 +1,4 @@
- #!/usr/bin/perl
+#!/usr/bin/perl
 use warnings;
 use strict;
 use Data::Dumper;
@@ -7,7 +7,6 @@ use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 use Graph::Directed;
-no warnings 'recursion';
 
 my @f = map { [split//] } read_file(\*STDIN, chomp => 1);
 

@@ -18,64 +18,65 @@ sub bin
     return oct("0b".shift());
 }
 
+my $bits;
+my $offset;
+
+sub get($)
+{
+    die if $offset > length $bits;
+    my $len = shift;
+    my $s = substr($bits, $offset, $len);
+#     print "$offset: get($len) = $s\n";
+    $offset += $len;
+
+    return $s;
+}
+
+sub getnum($)
+{
+    return bin(get(shift));
+}
+
 sub packet
 {
     my $p = shift;
 
-    my $v = bin(substr($p,0,3));
+    my $v = getnum(3);
+    my $t = getnum(3);
+
     $stage1 += $v;
 
-    my $t = bin(substr($p,3,3));
-
-#    print "packet v($v) t($t)\n";
-
-    $p = substr($p, 6);
-    if ($t == 4)
+    if ($t == 4) # literal value
     {
         my $q;
-        my $l = 0;
         while (1)
         {
-            my $q1 = substr($p,0,1);
-            my $q2 = substr($p,1,4);
-            $q .= $q2;
-            $l += 5;
-            $p = substr($p, 5);
-            last if $q1 eq '0';
+            my $px = getnum(1);
+            $q .= get(4);
+            last if $px == 0;
         }
-
-        return ($p, bin($q));
+        return bin($q);
     }
-    else
+    else # operators
     {
         my @a = ();
 
-        my $ltid = bin(substr($p,0,1));
-        $p = substr($p, 1);
+        my $ltid = getnum(1);
+
         if ($ltid == 0)
         {
-            my $subl = bin(substr($p,0,15));
-            $p = substr($p, 15);
-            my $sp = $p;
+            my $subl = getnum(15);
+            my $soff = $offset;
             while (1)
             {
-                my $uv;
-                ($sp,$uv) = packet(substr($sp,0,$subl));
-                push(@a,$uv);
-                last if $sp eq '';
+                push(@a, packet());
+                last if $offset == $soff + $subl;
             }
-            $p = substr($p, $subl);
         }
-        else # ltid 1
+        else # ($ltid == 1)
         {
-            my $subc = bin(substr($p,0,11));
-            $p = substr($p, 11);
-            for (1..$subc)
-            {
-                my $uv;
-                ($p,$uv) = packet($p);
-                push(@a,$uv);
-            }
+            my $subc = getnum(11);
+            push(@a, packet()) for (1..$subc);
         }
 
         my $r;
@@ -88,7 +89,7 @@ sub packet
         elsif ($t == 7) { $r = ($a[0] == $a[1] ? 1 : 0) }
         else { die }
 
-        return ($p, $r);
+        return $r;
     }
 }
 
@@ -96,17 +97,17 @@ my $i = 0;
 for (@f)
 {
     my $hex = $_;
+    printf "Entry %d: %s\n", $i, $hex;
+
     s/(..)/sprintf("%08b",hex($1))/eg;
 
-    $stage1 = 0;
+    $bits = $_;
+    $offset = 0;
 
-    while (1)
-    {
-        ($_,$stage2) = packet($_);
-        last if /^0*$/;
-    }
+    $stage1 = 0;
+    $stage2 = packet();
 
     printf "Entry %d, Stage 1: %s\n", $i, $stage1;
-    printf "Entry %d, Stage 2: %s\n", $i++, $stage2;
+    printf "Entry %d, Stage 2: %s\n\n", $i++, $stage2;
 }
 
