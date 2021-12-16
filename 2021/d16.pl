@@ -39,8 +39,6 @@ sub getnum($)
 
 sub packet
 {
-    my $p = shift;
-
     my $v = getnum(3);
     my $t = getnum(3);
 
