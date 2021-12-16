@@ -15,7 +15,7 @@ my $stage2 = 0;
 
 sub bin
 {
-    return oct("0b".shift());
+    return oct("0b".shift);
 }
 
 my $bits;
@@ -57,40 +57,34 @@ sub packet
         }
         return bin($q);
     }
-    else # operators
+
+    # operators
+    my @a = ();
+
+    my $ltid = getnum(1);
+    if ($ltid == 0)
     {
-        my @a = ();
-
-        my $ltid = getnum(1);
-
-        if ($ltid == 0)
-        {
-            my $subl = getnum(15);
-            my $soff = $offset;
-            while (1)
-            {
-                push(@a, packet());
-                last if $offset == $soff + $subl;
-            }
-        }
-        else # ($ltid == 1)
-        {
-            my $subc = getnum(11);
-            push(@a, packet()) for (1..$subc);
-        }
-
-        my $r;
-        if ($t == 0) { $r = sum(@a); }
-        elsif ($t == 1) { $r = product(@a) }
-        elsif ($t == 2) { $r = min(@a) }
-        elsif ($t == 3) { $r = max(@a) }
-        elsif ($t == 5) { $r = ($a[0] > $a[1] ? 1 : 0) }
-        elsif ($t == 6) { $r = ($a[0] < $a[1] ? 1 : 0) }
-        elsif ($t == 7) { $r = ($a[0] == $a[1] ? 1 : 0) }
-        else { die }
-
-        return $r;
+        my $subl = getnum(15);
+        my $soff = $offset;
+        push(@a, packet()) while ($offset < $soff + $subl)
     }
+    else # ($ltid == 1)
+    {
+        my $subc = getnum(11);
+        push(@a, packet()) for (1..$subc);
+    }
+
+    my $r;
+    if ($t == 0) { $r = sum(@a); }
+    elsif ($t == 1) { $r = product(@a) }
+    elsif ($t == 2) { $r = min(@a) }
+    elsif ($t == 3) { $r = max(@a) }
+    elsif ($t == 5) { $r = ($a[0] > $a[1] ? 1 : 0) }
+    elsif ($t == 6) { $r = ($a[0] < $a[1] ? 1 : 0) }
+    elsif ($t == 7) { $r = ($a[0] == $a[1] ? 1 : 0) }
+    else { die }
+
+    return $r;
 }
 
 my $i = 0;
