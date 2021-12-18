@@ -41,9 +41,21 @@ sub xplode
 
     for my $i (0..scalar(@t)-1)
     {
-        $l++ if $t[$i] eq '[';
-        $l-- if $t[$i] eq ']';
-        if ($t[$i] =~ /\d/)
+        next if $t[$i] eq ',';
+
+        if ($t[$i] eq '[')
+        {
+            $l++;
+            if ($l == 5 && $xpos == -1)
+            {
+                $xpos = $i; # we can't stop here becuase we need to find $rpos
+            }
+        }
+        elsif ($t[$i] eq ']')
+        {
+            $l--;
+        }
+        else # if ($t[$i] =~ /\d/)
         {
             if ($xpos == -1)
             {
@@ -52,13 +64,10 @@ sub xplode
             elsif ($rpos < $xpos+4) # xpos found, rpos not found (-1) or inside xploded pair
             {
                 $rpos = $i;
+                last if $rpos >= $xpos+4;
             }
         }
 
-        if ($l == 5 && $xpos == -1)
-        {
-            $xpos = $i; # we can't stop here becuase we need to find $rpos
-        }
     }
 
     if ($xpos > -1)
@@ -90,7 +99,7 @@ for my $a (@f)
 {
     for my $b (@f)
     {
-        $stage2 = max($stage2, mag(xadd($a,$b)), mag(xadd($b,$a)));
+        $stage2 = max($stage2, mag(xadd($a,$b)));
     }
 }
 
