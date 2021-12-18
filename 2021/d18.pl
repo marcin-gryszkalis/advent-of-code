@@ -42,16 +42,15 @@ sub xplode
 
     for my $i (0..scalar(@t)-1)
     {
-        my $e = $t[$i];
-        $l++ if $e eq '[';
-        $l-- if $e eq ']';
-        if ($e =~ /\d/)
+        $l++ if $t[$i] eq '[';
+        $l-- if $t[$i] eq ']';
+        if ($t[$i] =~ /\d/)
         {
             if ($xpos == -1)
             {
                 $lpos = $i;
             }
-            elsif ($xpos > -1 && $rpos < $xpos+4)
+            elsif ($rpos < $xpos+4) # not found (-1) or inside xploded pair
             {
                 $rpos = $i;
             }
@@ -59,7 +58,7 @@ sub xplode
 
         if ($l == 5 && $xpos == -1)
         {
-            $xpos = $i;
+            $xpos = $i; # we can't stop here becuase we need to find $rpos
         }
     }
 
@@ -67,7 +66,7 @@ sub xplode
     {
         $t[$rpos] += $t[$xpos+3] if $rpos > -1;
         $t[$lpos] += $t[$xpos+1] if $lpos > -1;
-        splice(@t,$xpos,5,0);
+        splice(@t, $xpos, 5, 0);
     }
 
     return join("",@t);
