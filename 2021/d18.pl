@@ -33,8 +33,7 @@ sub xadd
 sub xplode
 {
     my $s = shift;
-
-    my @t = ($s =~ m/(\[|\]|,|\d+)/g);
+    my @t = $s =~ m/(\[|\]|,|\d+)/g;
     my $l = 0; # level
     my $lpos = -1; # number on left
     my $rpos = -1; # number on right
@@ -50,7 +49,7 @@ sub xplode
             {
                 $lpos = $i;
             }
-            elsif ($rpos < $xpos+4) # not found (-1) or inside xploded pair
+            elsif ($rpos < $xpos+4) # xpos found, rpos not found (-1) or inside xploded pair
             {
                 $rpos = $i;
             }
