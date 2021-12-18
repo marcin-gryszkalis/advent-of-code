@@ -74,7 +74,7 @@ sub xplode
 sub xplit
 {
     $_ = shift;
-    return s{(\d\d)}{"[".floor($1/2).",".ceil($1/2)."]"}er;
+    return s{(\d\d+)}{"[".floor($1/2).",".ceil($1/2)."]"}er;
 }
 
 sub mag
