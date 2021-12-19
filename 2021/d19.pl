@@ -6,10 +6,6 @@ use List::Util qw/min max first sum product all any uniq head tail reduce/;
 use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations variations variations_with_repetition);
 use Clone qw/clone/;
-use Digest::MD5 qw(md5 md5_hex md5_base64);
-
-
-
 
 my @f = read_file(\*STDIN, chomp => 1);
 
@@ -71,9 +67,9 @@ while (1)
             for my $r (@$c)
             {
                 my @a = (
-                    $r->[abs($x->[0])] * ($x->[3]),
-                    $r->[abs($x->[1])] * ($x->[4]),
-                    $r->[abs($x->[2])] * ($x->[5]),
+                    $r->[$x->[0]] * ($x->[3]),
+                    $r->[$x->[1]] * ($x->[4]),
+                    $r->[$x->[2]] * ($x->[5]),
                     );
                 push @$d, \@a;
             }
