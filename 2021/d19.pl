@@ -25,8 +25,6 @@ for (@f)
 
 my $maxs = $sc;
 
-# this way we have 48 transformations (instead of 24 valid)
-# probably half of them is "mirror"
 my @xform;
 my $itv = variations_with_repetition([-1,1], 3);
 while (my $v = $itv->next)
@@ -34,6 +32,21 @@ while (my $v = $itv->next)
     my $itp = permutations([0,1,2]);
     while (my $p = $itp->next)
     {
+        my $pj = join("", @$p);
+
+        # without optimization below we'd have 48 transformations (instead of 24 valid)
+        # the other 24 is reachable only by single symmetry ("mirror")
+        # https://en.wikipedia.org/wiki/Chirality_(mathematics)
+
+        my $x = 0; # number of changes - it must be even to stay on right side of the mirror
+        $x+=0 if $pj =~ /(012)/; # identity
+        $x+=1 if $pj =~ /(021|210|102)/; # 1 swap (1 element in place)
+        $x+=2 if $pj =~ /(120|201)/; # 2 swaps (no element in place)
+        $x++ if $v->[0] < 0;
+        $x++ if $v->[1] < 0;
+        $x++ if $v->[2] < 0;
+        next if $x%2 == 1;
+
         push(@xform, [@$p,@$v]);
     }
 }
