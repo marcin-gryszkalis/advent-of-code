@@ -17,19 +17,19 @@ shift @f;
 
 my $infinite_trick = substr($p,0,1) eq '#';
 
-my $minx = 10;
-my $miny = 10;
-my $maxx = $minx + length($f[0]) + 10;
-my $maxy = $miny + scalar(@f) + 10;
+my $minx = 4;
+my $miny = 4;
+my $maxx = $minx + length($f[0]) + 4;
+my $maxy = $miny + scalar(@f) + 4;
 
-my $x = $minx + 5;
-my $y = $miny + 5;
+my $x = $minx + 2;
+my $y = $miny + 2;
 
 my $h;
 $; = ",";
 for (@f)
 {
-    $x = $minx + 5;
+    $x = $minx + 2;
     my @a = split//;
     for (@a)
     {
@@ -59,16 +59,16 @@ for my $l (1..50)
     {
         for my $x ($minx-2..$maxx+2)
         {
-            my $s;
+            my $s = 0;
             for my $dy (-1..1)
             {
                 for my $dx (-1..1)
                 {
-                    $s .= pixel($x+$dx,$y+$dy,$l);
+                    $s = $s << 1 | pixel($x+$dx,$y+$dy,$l);
                 }
             }
 
-            $hh->{$x,$y} = '#' if substr($p, oct("0b$s"), 1) eq '#';
+            $hh->{$x,$y} = '#' if substr($p, $s, 1) eq '#';
         }
     }
 
