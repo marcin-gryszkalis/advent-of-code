@@ -17,19 +17,19 @@ shift @f;
 
 my $infinite_trick = substr($p,0,1) eq '#';
 
-my $minx = 5;
-my $miny = 5;
-my $maxx = $minx + length($f[0]) + 5;
-my $maxy = $miny + scalar(@f) + 5;
+my $minx = 10;
+my $miny = 10;
+my $maxx = $minx + length($f[0]) + 10;
+my $maxy = $miny + scalar(@f) + 10;
 
-my $x = $minx+2;
-my $y = $miny+2;
+my $x = $minx + 5;
+my $y = $miny + 5;
 
 my $h;
 $; = ",";
 for (@f)
 {
-    $x = $minx + 2;
+    $x = $minx + 5;
     my @a = split//;
     for (@a)
     {
@@ -45,7 +45,7 @@ sub pixel
 
     if ($infinite_trick && ($xx < $minx || $yy < $miny || $xx > $maxx || $yy > $maxy))
     {
-        return $ll%2 ? 1 : 0;
+        return ($ll % 2 == 0) ? 1 : 0;
     }
 
     return (exists $h->{$xx,$yy}) ? 1 : 0;
@@ -54,7 +54,7 @@ sub pixel
 my $hh;
 for my $l (1..50)
 {
-    $hh = clone($h);
+    $hh = ();
     for my $y ($miny-2..$maxy+2)
     {
         for my $x ($minx-2..$maxx+2)
@@ -67,33 +67,15 @@ for my $l (1..50)
                     $s .= pixel($x+$dx,$y+$dy,$l);
                 }
             }
-            my $o = substr($p, oct("0b$s"), 1);
 
-            if ($o eq '#')
-            {
-                $hh->{$x,$y} = '#';
-            }
-            else
-            {
-                delete $hh->{$x,$y} if exists $hh->{$x,$y};
-            }
+            $hh->{$x,$y} = '#' if substr($p, oct("0b$s"), 1) eq '#';
         }
     }
 
     $h = $hh;
-    # for my $y ($miny-2..$maxy+2)
-    # {
-    #     for my $x ($minx-2..$maxx+2)
-    #     {
-    #         print (exists $h->{$x,$y} ? "#" : ".");
-    #     }
-    #     print "\n";
-    # }
 
-    $minx--;
-    $miny--;
-    $maxx++;
-    $maxy++;
+    $minx--; $miny--;
+    $maxx++; $maxy++;
 
     $stage1 = scalar keys(%$h) if $l == 2;
 }
