@@ -3,16 +3,17 @@ use warnings;
 use strict;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
+use List::MoreUtils qw/pairwise/;
 use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations variations variations_with_repetition);
 use Clone qw/clone/;
 
 my $target = 21;
-$target = 11;
- 
+
 my $p1 = 7;
 my $p2 = 10;
 
+# test values:
 # $p1 = 4;
 # $p2 = 8;
 
@@ -23,7 +24,7 @@ T: while (1)
 {
     for my $i (0..1)
     {
-        $p[$i] = ($p[$i] + 3*$d + 3) % 10; 
+        $p[$i] = ($p[$i] + 3*$d + 3) % 10;
         $d += 3;
         $s[$i] += ($p[$i] + 1);
         last T if $s[$i] >= 1000;
@@ -32,6 +33,7 @@ T: while (1)
 
 printf "Stage 1: %s\n", min(@s) * ($d-1);
 
+# number of moves (combinations) for given sum
 my %xu = (
     3 => 1,
     4 => 3,
@@ -42,6 +44,7 @@ my %xu = (
     9 => 1,
     );
 
+my %cache;
 
 my @w = (0,0);
 
@@ -52,10 +55,13 @@ sub d
 
     my $m = shift; # sum of 3 trows (move)
     my $u = shift; # universes so far on the path
-    
+
     my $s = shift; # scores so far
     my $q = shift; # positions
-    my $x = shift; # path as string
+    my $x = shift; # path as string - only for debugging
+
+    my $cid = "$p $m ".join(" ", @$s)." ".join(" ", @$q);
+    return @{$cache{$cid}} if exists $cache{$cid};
 
     if ($l > 0)
     {
@@ -64,21 +70,24 @@ sub d
             $s->[$p] += ($q->[$p] + 1);
             if ($s->[$p] >= $target)
             {
-                $w[$p] += $u;
-                print "p".($p+1)." won (score=$s->[$p]) at level($l) with u=$u (total $w[$p]) x1=$x->[0] x2=$x->[1]\n";
-                return;
+                return $p == 0 ? ($u, 0) : (0, $u);
             }
     }
 
-#   print "p=$p l=$l m=$m u=$u q: $q->[0] $q->[1] s: $s->[0] $s->[1] \n";
+    my @wa = (0, 0);
+    for my $i (3..9)
+    {
+        my @a = d($l+1, $i, $xu{$i}, clone($s), clone($q), clone($x));
+        @wa = pairwise { $a + $b } @wa, @a;
+    }
 
-   for my $i (3..9)
-   {
-       d($l+1, $i, $u * $xu{$i}, clone($s), clone($q), clone($x));
-   }
+    $cache{$cid} = \@wa;
+
+    @wa = map { $_ * $u } @wa;
+
+    return @wa;
 }
 
-d(0, 1, 1 , [0, 0], [$p1-1, $p2-1], ["", ""]);
-print "$w[0]\n$w[1]\n";
+@w = d(0, 1, 1 , [0, 0], [$p1-1, $p2-1], ["", ""]);
 
 printf "Stage 2: %s\n", max(@w);
