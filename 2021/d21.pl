@@ -32,7 +32,19 @@ T: while (1)
 
 printf "Stage 1: %s\n", min(@s) * ($d-1);
 
-exit;
+my %xu = (
+    3 => 1,
+    4 => 3,
+    5 => 6,
+    6 => 7,
+    7 => 6,
+    8 => 3,
+    9 => 1,
+    );
+
+my $target = 21;
+$target = 11;
+ 
 my $s1 = 0;
 my $s2 = 0;
 
@@ -42,7 +54,7 @@ my $w2 = 0;
 
 sub d
 {
-    my $p = shift; # we count p, move the other
+    my $p = shift; 
     my $l = shift;
     my $m = shift;
     my $u = shift;
@@ -75,11 +87,10 @@ sub d
         {
             $q1 = ($q1 + $m) % 10;
             $s1 += ($q1 + 1);
-            if ($s1 >= 21)
+            if ($s1 >= $target)
             {
                 $w1 += $u;
                 print "p1 won (score=$s1) at level($l) with u=$u (total $w1) x1=$xx1 x2=$xx2\n";
-#                exit;
                 return;
             }
         }
@@ -87,11 +98,10 @@ sub d
         {
             $q2 = ($q2 + $m) % 10;
             $s2 += ($q2 + 1);
-            if ($s2 >= 21)
+            if ($s2 >= $target)
             {
                 $w2 += $u;
                 print "p2 won (score=$s2) at level($l) with u=$u (total $w2) x1=$xx1 x2=$xx2\n";
-#                exit;
                 return;
             }
         }
@@ -101,17 +111,7 @@ sub d
     my $qq2 = $q2 + 1;
 #    print "p=$p l=$l m=$m u=$u q:$qq1 $qq2 s:$s1 $s2 \n";
 
-my %xu = (
-3 => 1,
-4 => 3,
-5 => 6,
-6 => 7,
-7 => 6,
-8 => 3,
-9 => 1,
-);
-
-    for my $i (3..9)
+   for my $i (3..9)
     {
         d($p == 1 ? 2 : 1, $l+1, $i, $u * $xu{$i}, $s1, $s2, $q1, $q2, $xx1, $xx2);
     }
@@ -120,4 +120,4 @@ my %xu = (
 d(2, 0, -1, 1, 0, 0, $p1, $p2, "", "");
 print "$w1\n$w2\n";
 
-printf "Stage 2: %s\n", min($w1,$w2);
+printf "Stage 2: %s\n", max($w1,$w2);
