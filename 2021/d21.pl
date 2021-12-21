@@ -7,8 +7,6 @@ use File::Slurp;
 use Algorithm::Combinatorics qw(combinations permutations variations variations_with_repetition);
 use Clone qw/clone/;
 
-#my @f = read_file(\*STDIN, chomp => 1);
-
 my $stage1 = 0;
 my $stage2 = 0;
 
@@ -18,14 +16,25 @@ my $p2 = 10;
 # $p1 = 4;
 # $p2 = 8;
 
+my $d = 1;
+my @s = (0,0);
+my @p = ($p1-1, $p2-1);
+T: while (1)
+{
+    for my $i (0..1)
+    {
+        $p[$i] = ($p[$i] + 3*$d + 3) % 10; 
+        $d += 3;
+        $s[$i] += ($p[$i] + 1);
+        last T if $s[$i] >= 1000;
+    }
+}
+
+printf "Stage 1: %s\n", min(@s) * ($d-1);
+
+exit;
 my $s1 = 0;
 my $s2 = 0;
-
-my $d = 1;
-my $t = 0;
-
-$p1--; # 0-9
-$p2--;
 
 
 my $w1 = 0;
@@ -110,38 +119,5 @@ my %xu = (
 
 d(2, 0, -1, 1, 0, 0, $p1, $p2, "", "");
 print "$w1\n$w2\n";
-exit;
 
-# my $i = 0;
-# my $it = variations_with_repetition([1,2,3], 3);
-# while (my $p = $it->next)
-# {
-#     $i++;
-#     print sum(@$p)."\n";
-# }
-# exit;
-while (1)
-{
-    $p1 = ($p1 + $d++) % 10;
-    $p1 = ($p1 + $d++) % 10;
-    $p1 = ($p1 + $d++) % 10;
-    $s1 += ($p1 + 1);
-    $t += 3;
-    last if $s1 >= 1000;
-
-    print "[$d] p1 = $p1 (total $s1)\n";
-
-    $p2 = ($p2 + $d++) % 10;
-    $p2 = ($p2 + $d++) % 10;
-    $p2 = ($p2 + $d++) % 10;
-    $s2 += ($p2 + 1);
-    $t += 3;
-    last if $s2 >= 1000;
-
-    print "[$d] p2 = $p2 (total $s2)\n";
-}
-
-$stage1 = min($s1,$s2) * $t;
-
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
+printf "Stage 2: %s\n", min($w1,$w2);
