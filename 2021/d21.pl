@@ -8,7 +8,7 @@ use Algorithm::Combinatorics qw(combinations permutations variations variations_
 use Clone qw/clone/;
 
 my $target = 21;
-# $target = 11;
+$target = 11;
  
 my $p1 = 7;
 my $p2 = 10;
@@ -78,7 +78,7 @@ sub d
    }
 }
 
-d(0, 1, 1 , [0, 0], [$p1, $p2], ["", ""]);
+d(0, 1, 1 , [0, 0], [$p1-1, $p2-1], ["", ""]);
 print "$w[0]\n$w[1]\n";
 
 printf "Stage 2: %s\n", max(@w);
