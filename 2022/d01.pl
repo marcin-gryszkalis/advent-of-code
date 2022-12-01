@@ -9,10 +9,6 @@ use Clone qw/clone/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
-
-my @e;
 my @s;
 my $i = 0;
 for (@f)
@@ -25,8 +21,5 @@ for (@f)
     $s[$i] += $_;
 }
 
-$stage1 = max(@s);
-$stage2 = sum((sort { $b <=> $a } (@s))[0..2]);
-
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
+printf "Stage 1: %s\n", max(@s);
+printf "Stage 2: %s\n", sum((sort { $b <=> $a } (@s))[0..2]);
