@@ -22,9 +22,8 @@ for my $stage (1..2)
         # b beats a if it's 1 step further, loses if it's 2 steps further
         $b = ($a + $b + 2) % 3 if $stage == 2;
 
-        $s += $b+1;
-        $s += 3 if $a == $b;
-        $s += 6 if ($a+1) % 3 == $b;
+        $s += $b + 1;
+        $s += 3 * (($b - $a + 1) % 3);
     }
 
     printf "Stage %d: %s\n", $stage, $s;
