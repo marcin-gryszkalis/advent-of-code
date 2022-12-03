@@ -3,12 +3,11 @@ use warnings;
 use strict;
 use File::Slurp;
 use Data::Dumper;
-use List::Util qw/min max first sum product all any uniq head tail reduce/;
+use List::Util qw/min max first sum product all any uniq head tail reduce mesh/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $v = 1;
-my %vmap = map { $_, $v++ } ('a'..'z','A'..'Z');
+my %vmap = mesh(['a'..'z','A'..'Z'], [1..52]);
 
 sub common
 {
