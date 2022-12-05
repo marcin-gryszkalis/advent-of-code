@@ -4,13 +4,9 @@ use strict;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce mesh/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 
 my @f = read_file(\*STDIN, chomp => 1);
-
-my $stage1 = '';
-my $stage2 = 0;
 
 my $stack;
 while (1)
@@ -22,11 +18,11 @@ while (1)
     my @a = m/..../g;
 
     my $i = 0;
-    for my $c (@a)
+    for (@a)
     {
         $i++;
-        next unless $c =~ /[A-Z]/;
-        unshift(@{$stack->{$i}}, $c);
+        next unless /([A-Z]+)/;
+        unshift(@{$stack->[$i]}, $1);
     }
 }
 
@@ -42,21 +38,13 @@ for my $stage (1..2)
         my @n = ();
         for my $c (1..$cnt)
         {
-            my $x = pop(@{$s->{$src}});
-            push(@n, $x);
+            push(@n, pop(@{$s->[$src]}));
         }
 
         @n = reverse @n if $stage == 2;
-        push(@{$s->{$dst}}, @n);
+        push(@{$s->[$dst]}, @n);
     }
 
-    my $r = '';
-    my $i = 1;
-    while (exists $s->{$i})
-    {
-        $r .= pop(@{$s->{$i++}});
-    }
-    $r =~ s/[^A-Z]//g;
-
-    printf "Stage $stage: %s\n", $r;
+    my $r = join("", map { pop(@$_) } grep { $_ } @$s);
+    printf "Stage %s: %s\n", $stage, $r;
 }
