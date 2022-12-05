@@ -14,11 +14,8 @@ while (1)
     $_ = shift(@f);
     last unless /\[/;
 
-    $_ .= " ";
-    my @a = m/..../g;
-
     my $i = 0;
-    for (@a)
+    for (m/....?/g)
     {
         $i++;
         next unless /([A-Z]+)/;
