@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use v5.36;
 use warnings;
 use strict;
 use File::Slurp;
@@ -6,19 +7,18 @@ use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
 
 my @f = read_file(\*STDIN, chomp => 1);
-my $s = $f[0];
+my @a = split//,$f[0];
 
-for my $stage (1..2)
+sub beg($len)
 {
-    my $len = $stage == 1 ? 4 : 14;
-
     my $i = 0;
     while (1)
     {
-        my @a = split//,substr($s,$i,$len);
-        last if scalar(uniq @a) == $len;
+        last if scalar(uniq @a[$i..$i+$len-1]) == $len;
         $i++;
     }
-
-    printf "Stage %d: %d\n", $stage, $i+$len;
+    return $i + $len;
 }
+
+printf "Stage 1: %d\n", beg(4);
+printf "Stage 2: %d\n", beg(14);
