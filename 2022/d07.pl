@@ -5,8 +5,6 @@ use strict;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
-use Clone qw/clone/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 shift @f; # skip cd /
@@ -14,13 +12,13 @@ shift @f; # skip cd /
 my $stage1 = 0;
 my $stage2 = 0;
 
-my $tt;
-$tt->{ROOT}->{SIZE} = 0;
-$tt->{ROOT}->{FP} = 'ROOT'; # full path
+my $t;
+$t->{ROOT}->{SIZE} = 0;
+$t->{ROOT}->{FP} = 'ROOT'; # full path
 
 my $ft; # flat tree
 
-my $xt = $tt->{ROOT};
+my $x = $t->{ROOT};
 my @xstack;
 
 for (@f)
@@ -30,50 +28,37 @@ for (@f)
         my $n = $1;
         if ($n eq '..')
         {
-            $xt = pop(@xstack);
+            $x = pop(@xstack);
         }
         else
         {
-            unless (defined $xt->{$n})
+            unless (defined $x->{$n})
             {
-                $xt->{$n}->{SIZE} = 0;
-                $xt->{$n}->{FP} = $xt->{FP}."/".$n;
-                $ft->{$xt->{$n}->{FP}} = 0;
+                $x->{$n}->{SIZE} = 0;
+                $x->{$n}->{FP} = $x->{FP}."/".$n;
+                $ft->{$x->{$n}->{FP}} = 0;
             }
 
-            push(@xstack, $xt);
-            $xt = $xt->{$n};
+            push(@xstack, $x);
+            $x = $x->{$n};
         }
-    }
-    elsif (/\$ ls/)
-    {
-        next;
-    }
-    elsif (/dir (\S+)/)
-    {
-        next;
     }
     elsif (/(\d+) (\S+)/)
     {
         my $xs = $1;
 
-        $xt->{SIZE} += $xs;
-        $ft->{$xt->{FP}} += $xs;
-        for my $xxt (@xstack)
+        $x->{SIZE} += $xs;
+        $ft->{$x->{FP}} += $xs;
+        for my $xx (@xstack)
         {
-            $xxt->{SIZE} += $xs;
-            $ft->{$xxt->{FP}} += $xs;
+            $xx->{SIZE} += $xs;
+            $ft->{$xx->{FP}} += $xs;
         }
     }
-    else
-    {
-        die $_;
-    }
+    # ls and dir are no-op
 }
 
-# say Dumper $tt;
-
-my $tofree = 30000000 - (70000000 - $tt->{ROOT}->{SIZE});
+my $tofree = 30000000 - (70000000 - $t->{ROOT}->{SIZE});
 
 for my $k (sort { $ft->{$a} <=> $ft->{$b} } keys %$ft)
 {
