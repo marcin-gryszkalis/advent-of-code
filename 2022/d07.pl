@@ -55,16 +55,10 @@ for (@f)
             $ft->{$xx->{FP}} += $xs;
         }
     }
-    # ls and dir are no-op
+    # ls and dir are no-op (assuming that we'll never do ls for the same dir twice!)
 }
 
-my $tofree = 30000000 - (70000000 - $t->{ROOT}->{SIZE});
+my $tofree = 30000000 - (70000000 - $ft->{ROOT});
 
-for my $k (sort { $ft->{$a} <=> $ft->{$b} } keys %$ft)
-{
-    $stage1 += $ft->{$k} if $ft->{$k} < 100000;
-    $stage2 = $ft->{$k} if $stage2 == 0 && $ft->{$k} > $tofree;
-}
-
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
+printf "Stage 1: %s\n", sum(grep { $_ < 100000 } values %$ft);
+printf "Stage 2: %s\n", min(grep { $_ > $tofree } values %$ft);
