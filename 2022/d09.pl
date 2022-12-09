@@ -23,13 +23,11 @@ for my $stage (1..2)
     {
         my ($d,$c) = split/\s/;
 
-        $x[0] += $c * $headmove->{$d}->[0];
-        $y[0] += $c * $headmove->{$d}->[1];
-
-        my $moved = 1;
-        while ($moved)
+        for (1..$c)
         {
-            $moved = 0;
+            $x[0] += $headmove->{$d}->[0];
+            $y[0] += $headmove->{$d}->[1];
+
             for my $i (1..$tail)
             {
                 my $dist = sqrt(($y[$i]-$y[$i-1])**2 + ($x[$i]-$x[$i-1])**2);
@@ -38,7 +36,6 @@ for my $stage (1..2)
 
                 $y[$i] += ($y[$i-1] <=> $y[$i]);
                 $x[$i] += ($x[$i-1] <=> $x[$i]);
-                $moved = 1;
             }
 
             $v->{$x[$tail],$y[$tail]} = 1;
