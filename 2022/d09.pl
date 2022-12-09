@@ -7,6 +7,8 @@ use List::Util qw/min max first sum product all any uniq head tail reduce/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 
+my $headmove = {"U" => [0,1], "D" => [0,-1], "L" => [-1,0], "R" => [1,0]};
+
 for my $stage (1..2)
 {
     my $tail = $stage == 1 ? 1 : 9;
@@ -21,10 +23,8 @@ for my $stage (1..2)
     {
         my ($d,$c) = split/\s/;
 
-        $x[0] += $c if $d eq 'R';
-        $x[0] -= $c if $d eq 'L';
-        $y[0] += $c if $d eq 'D';
-        $y[0] -= $c if $d eq 'U';
+        $x[0] += $c * $headmove->{$d}->[0];
+        $y[0] += $c * $headmove->{$d}->[1];
 
         my $moved = 1;
         while ($moved)
