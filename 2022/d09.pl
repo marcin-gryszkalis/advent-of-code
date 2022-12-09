@@ -13,71 +13,48 @@ my @f = read_file(\*STDIN, chomp => 1);
 my $stage1 = 0;
 my $stage2 = 0;
 
-my $hx = 100;
-my $hy = 100;
-my $tx = $hx;
-my $ty = $hy;
+my $shx = 100;
+my $shy = 100;
+
+my @x;
+my @y;
+
+my $tail = 9;
+for my $i (0..$tail)
+{
+    $x[$i] = $shx;
+    $y[$i] = $shy;
+}
+
 my $v;
 
-my $dx;
-my $dy;
 for (@f)
 {
-    die unless /(.) (\d+)/;
-    my ($d,$c) = ($1,$2);
+    my ($d,$c) = split/\s/;
 
-    print "> $d $c\n";
-    if ($d eq 'R') { $hx += $c; }
-    if ($d eq 'L') { $hx -= $c; }
-    if ($d eq 'U') { $hy -= $c; }
-    if ($d eq 'D') { $hy += $c; }
+    if ($d eq 'R') { $x[0] += $c; }
+    if ($d eq 'L') { $x[0] -= $c; }
+    if ($d eq 'U') { $y[0] -= $c; }
+    if ($d eq 'D') { $y[0] += $c; }
 
-
-    while (1)
+    my $moved = 1;
+    L: while (1)
     {
-        $v->{$tx,$ty} = 1;
+        $v->{$x[$tail],$y[$tail]} = 1;
 
-        my $dist = (abs($ty-$hy) + abs($tx-$hx));
-
-        print "$hx,$hy - $tx,$ty = $dist\n";
-
-        if ($tx == $hx || $ty == $hy)  # same row or col
+        $moved = 0;
+        for my $i (1..$tail)
         {
-            last if $dist < 2;
+            my $dist = sqrt(($y[$i]-$y[$i-1])**2 + ($x[$i]-$x[$i-1])**2);
+#            printf "%d,%d - %d,%d = $dist\n", $x[$i-1],$y[$i-1],$x[$i],$y[$i];
+            next if $dist < 2;
 
-            if ($tx == $hx)
-            {
-                $dy = ($hy <=> $ty);
-                $ty += $dy;
-            }
-            else
-            {
-                $dx = ($hx <=> $tx);
-                $tx += $dx;
-            }
-        }
-        else # diagonal
-        {
-            last if $dist < 3;
-                $dy = ($hy <=> $ty); # $hy - $ty;
-                $ty += $dy;
-
-                $dx = ($hx <=> $tx);
-                $tx += $dx;
-
-            # if (abs($ty-$hy) == 1)
-            # {
-            # }
-            # else
-            # {
-            #     $dx = ($hx <=> $tx); # $hx - $tx;
-            #     $tx += $dx;
-
-            #     $dy = ($hy <=> $ty);
-            #     $ty += $dy;
-            # }
+            $y[$i] += ($y[$i-1] <=> $y[$i]);
+            $x[$i] += ($x[$i-1] <=> $x[$i]);
+            $moved = 1;
         }
 
+        last unless $moved;
     }
 }
 
