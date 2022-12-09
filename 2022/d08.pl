@@ -56,7 +56,6 @@ for my $y (1..$maxy-1)
     {
         my $v = $t->{$x,$y};
 
-        my $nv = 0;
         my @sc = ();
         my $sci = 0;
 
