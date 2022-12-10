@@ -9,33 +9,32 @@ my @f = read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
 
+my %cycles = qw/noop 1 addx 2/;
+my @s = map { '.' } (0..239);
+
 my $x = 1;
 my $i = 1;
 
-my @s = map { '.' } (0..239);
-my %cycles = qw/noop 1 addx 2/;
-my $p = 0;
-my $y = 1;
 for (@f)
 {
     my ($op,$v) = /(....)\s?(-?\d+)?/;
     for my $r (1..$cycles{$op})
     {
-        $p = $i - 1;
-        $y = $p % 40;
-        $s[$p] = ($y >= $x-1 && $y <= $x+1) ? '#' : '.';
         $stage1 += $i * $x if ($i - 20) % 40 == 0;
+
+        my $p = $i - 1;
+        my $xs = $p % 40;
+        $s[$p] = ($xs >= $x-1 && $xs <= $x+1) ? '#' : '.';
         $i++;
     }
 
     $x += $v if $op eq 'addx';
-#    print "$i $p $x $y\n";
 }
 
 
 printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage1;
 
+printf "Stage 2:\n";
 for my $k (0..239)
 {
     print $s[$k];
