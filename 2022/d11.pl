@@ -8,11 +8,7 @@ use Clone qw/clone/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
-
 my $monkeys0;
-
 my @divs = ();
 
 my $m = undef;
@@ -80,4 +76,3 @@ for my $stage (1..2)
     my @inspects  = sort { $b <=> $a } map { $monkeys->{$_}->{inspects} } keys %$monkeys;
     printf "Stage $stage: %s\n", $inspects[0] * $inspects[1];
 }
-
