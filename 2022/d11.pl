@@ -25,7 +25,7 @@ for (@f)
         $m->{items} = undef;
         $x = $1;
     }
-    elsif (/Starting items:\s+(.*)/)
+    elsif (/Starting items: (.*)/)
     {
         my @a = $1 =~ m/(\d+)/g;
         $m->{items} = \@a;
@@ -64,12 +64,10 @@ for my $stage (1..2)
             while (my $i = shift(@{$m->{items}}))
             {
                 my $o = 0;
-                my $s = $m->{op};
-                $s =~ s/old/$i/g;
-                $s = '$o = '.$s;
-                eval $s;
+                eval('$o = ' . $m->{op} =~ s/old/$i/gr);
 
-                $o = $stage == 1 ? int($o/3) : $o % $divprod;
+                $o = int($o/3) if $stage == 1;
+                $o %= $divprod;
 
                 my $dest = $o % $m->{divisible} ? $m->{iff} : $m->{ift};
                 push(@{$monkeys->{$dest}->{items}}, $o);
