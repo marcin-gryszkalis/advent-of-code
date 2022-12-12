@@ -23,21 +23,21 @@ for my $y (0..$maxy)
 {
     for my $x (0..$maxx)
     {
-        my $e = $f[$y]->[$x];
+        my $k = $f[$y][$x];
 
-        if ($e eq 'S')
+        if ($k eq 'S')
         {
-            $f[$y]->[$x] = 'a';
+            $k = 'a';
             $sx = $x; $sy = $y;
         }
 
-        if ($e eq 'E')
+        if ($k eq 'E')
         {
-            $f[$y]->[$x] = 'z';
+            $k = 'z';
             $ex = $x; $ey = $y;
         }
 
-        $f[$y]->[$x] = ord($f[$y]->[$x]) - ord('a');
+        $f[$y][$x] = ord($k) - ord('a');
     }
 }
 
@@ -45,8 +45,7 @@ for my $y (0..$maxy)
 {
     for my $x (0..$maxx)
     {
-
-        my $e = $f[$y]->[$x];
+        my $e = $f[$y][$x];
 
         for my $dy (-1..1)
         {
@@ -58,19 +57,17 @@ for my $y (0..$maxy)
                 next if $xdx < 0 || $xdx > $maxx;
                 next if $ydy < 0 || $ydy > $maxy;
 
-                next if $f[$ydy]->[$xdx] - $e > 1;
+                next unless $f[$ydy][$xdx] - $e >= -1; # reverse: >= -1, forward: <= 1
 
-#                    print "$x,$y ($e: $v) -> $xdx,$ydy ($ed: $vd) => $dif\n";
-                $g->add_edge("$x,$y","$xdx,$ydy");
+                $g->add_edge("$x,$y", "$xdx,$ydy");
             }
         }
 
     }
 }
-print "vertices: ".scalar($g->vertices)."\n";
-print "edges: ".scalar($g->edges)."\n";
 
-my @p1 = $g->SP_Dijkstra("$sx,$sy", "$ex,$ey");
+# searching in reverse (from end to start) is faster for given input (lot of unused 'a's)
+my @p1 = $g->SP_Dijkstra("$ex,$ey", "$sx,$sy");
 $stage1 = scalar(@p1) - 1;
 printf "Stage 1: %s\n", $stage1;
 
@@ -79,14 +76,11 @@ for my $x (0..$maxx)
 {
     for my $y (0..$maxy)
     {
-        my $e = $f[$y]->[$x];
-        next unless $e == 0; # 'a'
+        my $k = $f[$y][$x];
+        next unless $k == 0; # 'a'
 
-        print("$x,$y\n");
-        my @p1 = $g->SP_Dijkstra("$x,$y", "$ex,$ey");
+        my @p1 = $g->SP_Dijkstra("$ex,$ey", "$x,$y");
         my $l = scalar(@p1) - 1;
-
-        print("$x,$y -> $l $stage2\n");
 
         next if $l == -1; # unreachable
         $stage2 = $l if $l < $stage2;
