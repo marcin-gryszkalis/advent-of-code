@@ -19,24 +19,25 @@ my $maxy = $wy - 1;
 my $maxx = $wx - 1;
 
 my ($sx,$sy,$ex,$ey);
-
 for my $y (0..$maxy)
 {
     for my $x (0..$maxx)
     {
         my $e = $f[$y]->[$x];
+
         if ($e eq 'S')
         {
             $f[$y]->[$x] = 'a';
-            $sx = $x;
-            $sy = $y;
+            $sx = $x; $sy = $y;
         }
+
         if ($e eq 'E')
         {
             $f[$y]->[$x] = 'z';
-            $ex = $x;
-            $ey = $y;
+            $ex = $x; $ey = $y;
         }
+
+        $f[$y]->[$x] = ord($f[$y]->[$x]) - ord('a');
     }
 }
 
@@ -51,24 +52,16 @@ for my $y (0..$maxy)
         {
             for my $dx (-1..1)
             {
-                    next if abs($dx) + abs($dy) == 0;
-                    next if abs($dx) + abs($dy) != 1;
-                    my $xdx = $x + $dx;
-                    my $ydy = $y + $dy;
-                    next if $xdx < 0 || $xdx > $maxx;
-                    next if $ydy < 0 || $ydy > $maxy;
+                next if abs($dx) + abs($dy) != 1;
+                my $xdx = $x + $dx;
+                my $ydy = $y + $dy;
+                next if $xdx < 0 || $xdx > $maxx;
+                next if $ydy < 0 || $ydy > $maxy;
 
-                    my $v = ord($e) - ord('a');
-                    my $ed = $f[$ydy]->[$xdx];
-                    my $vd = ord($ed) - ord('a');
-                    my $dif = $vd - $v;
-
-                    next if $dif > 1;
+                next if $f[$ydy]->[$xdx] - $e > 1;
 
 #                    print "$x,$y ($e: $v) -> $xdx,$ydy ($ed: $vd) => $dif\n";
-                    # $g->add_weighted_edge($x.$;.$y, "$xdx$;$ydy", $dif);
-                    $g->add_edge("$x,$y","$xdx,$ydy");
-
+                $g->add_edge("$x,$y","$xdx,$ydy");
             }
         }
 
@@ -87,14 +80,15 @@ for my $x (0..$maxx)
     for my $y (0..$maxy)
     {
         my $e = $f[$y]->[$x];
-        next unless $e eq 'a';
+        next unless $e == 0; # 'a'
 
+        print("$x,$y\n");
         my @p1 = $g->SP_Dijkstra("$x,$y", "$ex,$ey");
         my $l = scalar(@p1) - 1;
 
-print("$x,$y $l $stage2\n");
+        print("$x,$y -> $l $stage2\n");
 
-        next if $l == -1;
+        next if $l == -1; # unreachable
         $stage2 = $l if $l < $stage2;
     }
 }
