@@ -14,7 +14,7 @@ sub compare
     my $i = 0;
     while (1)
     {
-        my $l = $_[0]->[$i];        
+        my $l = $_[0]->[$i];
         my $r = $_[1]->[$i++];
 
         return -1 if  defined $l && !defined $r;
@@ -61,4 +61,3 @@ for my $a (sort { compare($b,$a) } @f)
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", product(@d);
-
