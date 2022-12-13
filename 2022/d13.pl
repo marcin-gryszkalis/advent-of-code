@@ -11,13 +11,11 @@ my @f = map { eval $_ } grep { /\[/ } read_file(\*STDIN, chomp => 1);
 
 sub compare
 {
-    my ($la, $ra) = @_;
-
     my $i = 0;
     while (1)
     {
-        my $l = $la->[$i];        
-        my $r = $ra->[$i++];
+        my $l = $_[0]->[$i];        
+        my $r = $_[1]->[$i++];
 
         return -1 if  defined $l && !defined $r;
         return  0 if !defined $l && !defined $r;
@@ -38,7 +36,6 @@ sub compare
 
         return $res if $res != 0;
     }
-
 }
 
 my $stage1 = 0;
@@ -58,7 +55,6 @@ for my $a (sort { compare($b,$a) } @f)
     $_ = Dumper $a;
     s/.*=//;
     s/[\s;]+//g;
-#print "$i $_\n";
     push(@d, $i) if /^\[\[[26]\]\]$/;
     $i++;
 }
