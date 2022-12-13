@@ -7,68 +7,41 @@ use List::Util qw/min max first sum product all any uniq head tail reduce/;
 use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 
-my @ft = read_file(\*STDIN, chomp => 1);
-my @f;
-for my $a (@ft)
-{
-    next unless $a =~ /\[/;
-    eval "\$a = $a";
-    push(@f,$a);
-}
-
-my $stage1 = 0;
+my @f = map { eval $_ } grep { /\[/ } read_file(\*STDIN, chomp => 1);
 
 sub compare
 {
-    my ($l,$r) = @_;
+    my ($la, $ra) = @_;
 
     my $i = 0;
     while (1)
     {
-        if (!exists $l->[$i] && exists $r->[$i])
-        {
-            return 1;
-        }
-        elsif (exists $l->[$i] && !exists $r->[$i])
-        {
-            return -1;
-        }
-        elsif (!exists $l->[$i] && !exists $r->[$i]) # eol
-        {
-            return 0;
-        }
+        my $l = $la->[$i];        
+        my $r = $ra->[$i++];
+
+        return -1 if  defined $l && !defined $r;
+        return  0 if !defined $l && !defined $r;
+        return  1 if !defined $l &&  defined $r;
 
         my $res = 0;
-        if (ref $l->[$i] && !ref $r->[$i])
+        if (!ref $l && !ref $r)
         {
-            $res = compare($l->[$i], [$r->[$i]]);
-        }
-        elsif (!ref $l->[$i] && ref $r->[$i])
-        {
-            $res = compare([$l->[$i]], $r->[$i]);
-        }
-        elsif (ref $l->[$i] && ref $r->[$i])
-        {
-            $res = compare($l->[$i], $r->[$i]);
+            $res = $r <=> $l;
         }
         else
         {
-            if ($l->[$i] < $r->[$i])
-            {
-                $res = 1;
-            }
-            elsif ($l->[$i] > $r->[$i])
-            {
-                $res = -1;
-            }
+            $res = compare(
+                ref $l ? $l : [$l],
+                ref $r ? $r : [$r]
+            );
         }
 
         return $res if $res != 0;
-        $i++;
     }
 
 }
 
+my $stage1 = 0;
 my $i = 0;
 while (exists $f[$i])
 {
@@ -76,23 +49,20 @@ while (exists $f[$i])
     $i += 2;
 }
 
-push(@f,[[2]],[[6]]);
+push(@f, [[2]], [[6]]);
 
-my $d1 = 0;
-my $d2 = 0;
-
+my @d;
 $i = 1;
 for my $a (sort { compare($b,$a) } @f)
 {
     $_ = Dumper $a;
     s/.*=//;
     s/[\s;]+//g;
-
-    $d1 = $i if $_ eq '[[2]]';
-    $d2 = $i if $_ eq '[[6]]';
-
+#print "$i $_\n";
+    push(@d, $i) if /^\[\[[26]\]\]$/;
     $i++;
 }
 
 printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: $d1 x $d2 = %s\n", $d1 * $d2;
+printf "Stage 2: %s\n", product(@d);
+
