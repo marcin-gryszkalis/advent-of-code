@@ -13,78 +13,88 @@ my @f = read_file(\*STDIN, chomp => 1);
 my $stage1 = 0;
 my $stage2 = 0;
 
-my $sx = 500;
-my $sy = 0;
+my ($sx,$sy) = (500,0);
 
 my $m;
 
-my $minx = 10000;
-my $miny = 10000;
-my $maxx = 0;
-my $maxy = 0;
+my ($minx,$maxx) = (10000,0);
+my ($miny,$maxy) = (10000,0);
+
 for (@f)
 {
-    my @a = split/ -> /;
-    my $px = -1;
-    my $py = -1;
-    for my $e (@a)
+    my ($px,$py) = (-1,-1);
+    for (split/ -> /)
     {
-        my ($x,$y) = split(/,/, $e);
+        my ($x,$y) = split/,/;
         if ($px != -1)
         {
-            my $x1 = min($x, $px);
-            my $x2 = max($x, $px);
-            my $y1 = min($y, $py);
-            my $y2 = max($y, $py);
-
-#print "$x1 - $x2, $y1 - $y2\n";
-            $maxx = $x2 if $x2 > $maxx;
-            $maxy = $y2 if $y2 > $maxy;
-            $minx = $x1 if $x1 < $minx;
-            $miny = $y1 if $y1 < $miny;
+            my $x1 = min($x, $px); $minx = $x1 if $x1 < $minx;
+            my $y1 = min($y, $py); $miny = $y1 if $y1 < $miny;
+            my $x2 = max($x, $px); $maxx = $x2 if $x2 > $maxx;
+            my $y2 = max($y, $py); $maxy = $y2 if $y2 > $maxy;
 
             if ($px == $x)
             {
-                for my $ty ($y1..$y2)
-                {
-                    $m->{$x,$ty} = '#';
-                }
+                for my $ty ($y1..$y2) { $m->{$x,$ty} = '#' }
             }
             else
             {
-                for my $tx ($x1..$x2)
-                {
-                    $m->{$tx,$y} = '#';
-                }
-
+                for my $tx ($x1..$x2) { $m->{$tx,$y} = '#' }
             }
         }
 
         $px = $x;
         $py = $y;
-
-
     }
 }
 
-# print Dumper $m;
-# print "$minx - $maxx; $miny - $maxy\n";
-
-
-my $i = 0;
 L: while (1)
 {
-    $i++;
+    $stage1++;
+    my ($x,$y) = ($sx,$sy);
 
-    my $x = $sx;
-    my $y = $sy;
+    while (1)
+    {
+        if (!exists $m->{$x,$y+1})
+        {
+            $y++;
+        }
+        elsif (!exists $m->{$x-1,$y+1})
+        {
+            $x--;
+            $y++;
+        }
+        elsif (!exists $m->{$x+1,$y+1})
+        {
+            $x++;
+            $y++;
+        }
+        else # blocked
+        {
+            $m->{$x,$y} = 'o';
+            next L;
+        }
+
+        if ($y == $maxy)
+        {
+            $stage1--;
+            last L;
+        }
+    }
+}
+
+$stage2 = $stage1;
+K: while (1)
+{
+    $stage2++;
+    my ($x,$y) = ($sx,$sy);
 
     while (1)
     {
         if ($y == $maxy + 1)
         {
             $m->{$x,$y} = 'o';
-            next L;
+            next K;
         }
 
         if (!exists $m->{$x,$y+1})
@@ -105,35 +115,23 @@ L: while (1)
         {
             $m->{$x,$y} = 'o';
 
-            if ($y == 0)
-            {
-                last L;
-            }
-            next L;
+            last K if $y == 0;
+            next K;
         }
-
-        # if ($y > $maxy)
-        # {
-                $i--;
-        #     last L;
-        # }
-
-        # for my $y (0..$maxy)
-        # {
-        #     for my $x ($minx..$maxx)
-        #     {
-        #         my $v = '.';
-        #         if (exists $m->{$x,$y})
-        #         {
-        #             $v = $m->{$x,$y};
-        #         }
-        #         print $v;
-        #     }
-        #     print "\n";
-        # }
-
     }
-
 }
-printf "Stage 1: %s\n", $i;
+
+printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
+
+# $minx -= 10;
+# $maxx += 10;
+# $maxy ++;
+# for my $y (0..$maxy)
+# {
+#     for my $x ($minx..$maxx)
+#     {
+#         print exists $m->{$x,$y} ? $m->{$x,$y} : '.';
+#     }
+#     print "\n";
+# }
