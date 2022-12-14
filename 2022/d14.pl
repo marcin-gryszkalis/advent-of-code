@@ -4,14 +4,9 @@ use strict;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
-use Clone qw/clone/;
 $; = ",";
 
 my @f = read_file(\*STDIN, chomp => 1);
-
-my $stage1 = 0;
-my $stage2 = 0;
 
 my ($sx,$sy) = (500,0);
 
@@ -28,10 +23,10 @@ for (@f)
         my ($x,$y) = split/,/;
         if ($px != -1)
         {
-            my $x1 = min($x, $px); $minx = $x1 if $x1 < $minx;
-            my $y1 = min($y, $py); $miny = $y1 if $y1 < $miny;
-            my $x2 = max($x, $px); $maxx = $x2 if $x2 > $maxx;
-            my $y2 = max($y, $py); $maxy = $y2 if $y2 > $maxy;
+            my ($x1,$x2) = sort($x,$px);
+            my ($y1,$y2) = sort($y,$py);
+            $minx = min($x1,$minx); $maxx = max($x2,$maxx);
+            $miny = min($y1,$miny); $maxy = max($y2,$maxy);
 
             if ($px == $x)
             {
@@ -43,14 +38,12 @@ for (@f)
             }
         }
 
-        $px = $x;
-        $py = $y;
+        ($px,$py) = ($x,$y);
     }
 }
 
 L: while (1)
 {
-    $stage1++;
     my ($x,$y) = ($sx,$sy);
 
     while (1)
@@ -75,18 +68,17 @@ L: while (1)
             next L;
         }
 
-        if ($y == $maxy)
+        if ($y == $maxy) # bypassed last rock
         {
-            $stage1--;
             last L;
         }
     }
 }
 
-$stage2 = $stage1;
+printf "Stage 1: %s\n", scalar grep { /o/ } values %$m;
+
 K: while (1)
 {
-    $stage2++;
     my ($x,$y) = ($sx,$sy);
 
     while (1)
@@ -115,14 +107,13 @@ K: while (1)
         {
             $m->{$x,$y} = 'o';
 
-            last K if $y == 0;
+            last K if $y == 0; # stuck at the start
             next K;
         }
     }
 }
 
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
+printf "Stage 2: %s\n", scalar grep { /o/ } values %$m;
 
 # $minx -= 10;
 # $maxx += 10;
