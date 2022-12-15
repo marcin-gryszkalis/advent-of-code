@@ -76,18 +76,9 @@ printf "Stage 1: %s\n", $s1s->size();
 
 my $xwidth = $maxx - $minx + 1;
 
-my $tt = time();
-Y: for my $y ($miny..$maxy)
+my $y = $miny;
+Y: while ($y < $maxy)
 {
-    if ($y % 100000 == 0)
-    {
-        my $t = time();
-        $tt = $t - $tt;
-#        print "$tt $y\n";
-        $tt = $t;
-
-    }
-
     # don't use proper sets/spans here - it's 10x slower and not needed
     # just track right boudnary of union of sorted ranges
     my @ranges = ();
@@ -105,7 +96,7 @@ Y: for my $y ($miny..$maxy)
     }
 
     my $r = $minx - 1; # right boundary of range
-    my $minoverlap = $xwidth;
+    my $minoverlap = $xwidth; # overlap can shrink at most 2 pieces for 1 y, so we can skip parts (taken from reddit)
     for my $rng (sort { $a->[0] <=> $b->[0] } @ranges)
     {
         my $lx = $rng->[0];
@@ -118,8 +109,10 @@ Y: for my $y ($miny..$maxy)
             exit;
         }
 
-
+        $minoverlap = min($minoverlap, $r - $lx) if $r > -1;
         $r = $rx if $rx > $r;
+
     }
 
+    $y += $minoverlap/2 > 0 ? int($minoverlap/2) : 1;
 }
