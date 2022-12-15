@@ -72,11 +72,11 @@ if (scalar @f == 14) # test File
 
 use Set::Infinite;
 
-my @sm;
-
+my $sm;
 for my $y ($miny..$maxy)
 {
-    $sm[$y] = Set::Infinite->new();
+    $sm->[$y] = Set::Infinite->new();
+    $sm->[$y] = $sm->[$y]->tolerance(1)
 }
 
 for my $s (keys %$m)
@@ -97,23 +97,29 @@ for my $s (keys %$m)
 
         my $lx = max($p->{sx} - $dx, $minx);
         my $rx = min($p->{sx} + $dx, $maxx);
-        $sm[$y]->union($lx,$rx);
+        $sm->[$y] = $sm->[$y]->union($lx,$rx);
+#        print "$y($lx,$rx) $sm->[$y]\n";
     }
+
 }
 
 for my $y ($miny..$maxy)
 {
-    my $xset = $sm[$y];
+    my $xset = $sm->[$y];
     my $cc = $xset->size() + $xset->count();
-    if ($cc < ($maxx - $minx + 1))
+#    printf "$xset %d %d\n", $xset->size(), $xset->count();
+    if ($xset->size() < ($maxx - $minx + 1))
     {
         print "$y $xset ";
         print "\n";
         #exit;
 
         my $tset = Set::Infinite->new($minx,$maxx);
-        $tset->minus($xset);
+        $tset = $tset->minus($xset);
         print "t = $tset\n";
+        print 4000000 * ($tset->min() + 1) + $y;
+        print "\n";
+        exit;
     }
 }
 
