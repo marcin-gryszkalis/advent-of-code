@@ -74,41 +74,50 @@ for my $s (keys %$m)
 }
 printf "Stage 1: %s\n", $s1s->size();
 
-my $sm;
-for my $y ($miny..$maxy)
-{
-    $sm->{$y} = new Set::IntSpan;
-}
+# my $sm;
+# for my $y ($miny..$maxy)
+# {
+#     $sm->{$y} = new Set::IntSpan;
+# }
 
-for my $s (keys %$m)
+my $xwidth = $maxx - $minx + 1;
+Y: for my $y ($miny..$maxy)
 {
-    print "sensor: $s\n";
-    my $p = $m->{$s};
-
-    for my $y ($p->{s2ly}..$p->{s2ry})
+    print "$y\n" if $y % 100000 == 0;
+    my $set = new Set::IntSpan;
+    for my $s (keys %$m)
     {
+ #   print "sensor: $s\n";
+        my $p = $m->{$s};
+
         my $dy = abs($y - $p->{sy});
-        my $dx = ($p->{dx} + $p->{dy}) - $dy;
-#        next if $dx < 0;
+        my $dx = $p->{r} - $dy;
+        next if $dx < 0; # this diamond doesn't reach $stage1y
 
         my $lx = max($p->{sx} - $dx, $minx);
         my $rx = min($p->{sx} + $dx, $maxx);
-        $sm->{$y} += [[$lx,$rx]];
+        $set += [[$lx,$rx]];
+        next Y if $set->size() == $xwidth;
 #        print "$y($lx,$rx) $sm->{$y}\n";
     }
 
-}
-
-for my $y ($miny..$maxy)
-{
-    my $xset = $sm->{$y};
-    next if $xset->size() == $maxx - $minx + 1;
-
     my $tset =  new Set::IntSpan([[$minx,$maxx]]);
-    $tset -= $xset;
+    $tset -= $set;
     my $x = $tset->min();
 
     printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
     last;
 }
 
+# for my $y ($miny..$maxy)
+# {
+#     my $xset = $sm->{$y};
+#     next if $xset->size() == $maxx - $minx + 1;
+
+#     my $tset =  new Set::IntSpan([[$minx,$maxx]]);
+#     $tset -= $xset;
+#     my $x = $tset->min();
+
+#     printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
+#     last;
+# }
