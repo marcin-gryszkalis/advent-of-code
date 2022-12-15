@@ -13,8 +13,17 @@ my $stage2 = 0;
 
 my $m;
 
-my ($minx,$maxx) = (100000000,-100000000);
-my ($miny,$maxy) = (100000000,-100000000);
+my ($minx,$maxx) = (0,4000000);
+my ($miny,$maxy) = (0,4000000);
+
+my $stage1y = 2000000;
+
+if (scalar @f == 14) # test File
+{
+    $stage1y = 10;
+    ($minx,$maxx) = (0,20);
+    ($miny,$maxy) = (0,20);
+}
 
 my $i = 0;
 for (@f)
@@ -32,30 +41,18 @@ for (@f)
 
     $m->{$i}->{r} = $m->{$i}->{dx} + $m->{$i}->{dy};
 
+    $m->{$i}->{s2ly} = max($m->{$i}->{sy} - $m->{$i}->{r}, $miny);
+    $m->{$i}->{s2ry} = min($m->{$i}->{sy} + $m->{$i}->{r}, $maxy);
+
     # real min/max, not used:
-    $minx = min($minx, $m->{$i}->{sx} - $m->{$i}->{r}); 
-    $maxx = max($maxx, $m->{$i}->{sx} - $m->{$i}->{r}); 
-    $miny = min($miny, $m->{$i}->{sy} - $m->{$i}->{r}); 
-    $maxy = max($maxy, $m->{$i}->{sy} - $m->{$i}->{r}); 
+    # $minx = min($minx, $m->{$i}->{sx} - $m->{$i}->{r});
+    # $maxx = max($maxx, $m->{$i}->{sx} - $m->{$i}->{r});
+    # $miny = min($miny, $m->{$i}->{sy} - $m->{$i}->{r});
+    # $maxy = max($maxy, $m->{$i}->{sy} - $m->{$i}->{r});
 
     $i++;
 }
 
-my $stage1y = 2000000;
-
-$minx = 0;
-$miny = 0;
-$maxx = 4000000;
-$maxy = 4000000;
-
-if (scalar @f == 14) # test File
-{
-    $stage1y = 10;
-    $minx = 0;
-    $miny = 0;
-    $maxx = 20;
-    $maxy = 20;
-}
 
 my $s1s = new Set::IntSpan;
 
@@ -88,12 +85,7 @@ for my $s (keys %$m)
     print "sensor: $s\n";
     my $p = $m->{$s};
 
-    my $d = $p->{dx} + $p->{dy};
-
-    my $ly = max($p->{sy} - $d, $miny);
-    my $ry = min($p->{sy} + $d, $maxy);
-
-    for my $y ($ly..$ry)
+    for my $y ($p->{s2ly}..$p->{s2ry})
     {
         my $dy = abs($y - $p->{sy});
         my $dx = ($p->{dx} + $p->{dy}) - $dy;
@@ -111,11 +103,11 @@ for my $y ($miny..$maxy)
 {
     my $xset = $sm->{$y};
     next if $xset->size() == $maxx - $minx + 1;
-        
+
     my $tset =  new Set::IntSpan([[$minx,$maxx]]);
     $tset -= $xset;
     my $x = $tset->min();
-        
+
     printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
     last;
 }
