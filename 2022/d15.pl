@@ -74,31 +74,24 @@ for my $s (keys %$m)
 
 printf "Stage 1: %s\n", $s1s->size();
 
-
 my $xwidth = $maxx - $minx + 1;
-
-# random order - 11min
-# my @mks = keys %$m;
-# sort by size - 8:18min
-my @mks = sort { $m->{$b}->{r} <=> $m->{$a}->{r} } keys %$m;
-# sort by distance from curent y (every 100k) - 7:30
 
 my $tt = time();
 Y: for my $y ($miny..$maxy)
 {
-    if ($y % 10000 == 0)
+    if ($y % 100000 == 0)
     {
         my $t = time();
         $tt = $t - $tt;
 #        print "$tt $y\n";
         $tt = $t;
 
-        # sort by distance from current y
-        @mks = sort { abs($m->{$a}->{sy} - $y) <=> abs($m->{$b}->{sy} - $y) } @mks;
     }
 
-    my $set = new Set::IntSpan;
-    for my $s (@mks)
+    # don't use proper sets/spans here - it's 10x slower and not needed
+    # just track right boudnary of union of sorted ranges
+    my @ranges = ();
+    for my $s (keys %$m)
     {
         my $p = $m->{$s};
 
@@ -108,14 +101,25 @@ Y: for my $y ($miny..$maxy)
 
         my $lx = max($p->{sx} - $dx, $minx);
         my $rx = min($p->{sx} + $dx, $maxx);
-        $set += [[$lx,$rx]];
-        next Y if $set->size() == $xwidth;
+        push(@ranges, [$lx,$rx]);
     }
 
-    my $tset =  new Set::IntSpan([[$minx,$maxx]]);
-    $tset -= $set;
-    my $x = $tset->min();
+    my $r = $minx - 1; # right boundary of range
+    my $minoverlap = $xwidth;
+    for my $rng (sort { $a->[0] <=> $b->[0] } @ranges)
+    {
+        my $lx = $rng->[0];
+        my $rx = $rng->[1];
 
-    printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
-    last;
+        if ($lx > $r + 1)
+        {
+            my $x = $r + 1;
+            printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
+            exit;
+        }
+
+
+        $r = $rx if $rx > $r;
+    }
+
 }
