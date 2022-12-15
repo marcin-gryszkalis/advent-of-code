@@ -18,7 +18,7 @@ my ($miny,$maxy) = (0,4000000);
 
 my $stage1y = 2000000;
 
-if (scalar @f == 14) # test File
+if (scalar @f == 14) # test file (d15x.txt)
 {
     $stage1y = 10;
     ($minx,$maxx) = (0,20);
@@ -53,7 +53,6 @@ for (@f)
     $i++;
 }
 
-
 my $s1s = new Set::IntSpan;
 
 for my $s (keys %$m)
@@ -72,22 +71,35 @@ for my $s (keys %$m)
     $s1s -= $p->{bx} if $p->{by} == $stage1y;
     $s1s -= $p->{sx} if $p->{sy} == $stage1y;
 }
+
 printf "Stage 1: %s\n", $s1s->size();
 
-# my $sm;
-# for my $y ($miny..$maxy)
-# {
-#     $sm->{$y} = new Set::IntSpan;
-# }
 
 my $xwidth = $maxx - $minx + 1;
+
+# random order - 11min
+# my @mks = keys %$m;
+# sort by size - 8:18min
+my @mks = sort { $m->{$b}->{r} <=> $m->{$a}->{r} } keys %$m;
+# sort by distance from curent y (every 100k) - 7:30
+
+my $tt = time();
 Y: for my $y ($miny..$maxy)
 {
-    print "$y\n" if $y % 100000 == 0;
-    my $set = new Set::IntSpan;
-    for my $s (keys %$m)
+    if ($y % 10000 == 0)
     {
- #   print "sensor: $s\n";
+        my $t = time();
+        $tt = $t - $tt;
+#        print "$tt $y\n";
+        $tt = $t;
+
+        # sort by distance from current y
+        @mks = sort { abs($m->{$a}->{sy} - $y) <=> abs($m->{$b}->{sy} - $y) } @mks;
+    }
+
+    my $set = new Set::IntSpan;
+    for my $s (@mks)
+    {
         my $p = $m->{$s};
 
         my $dy = abs($y - $p->{sy});
@@ -98,7 +110,6 @@ Y: for my $y ($miny..$maxy)
         my $rx = min($p->{sx} + $dx, $maxx);
         $set += [[$lx,$rx]];
         next Y if $set->size() == $xwidth;
-#        print "$y($lx,$rx) $sm->{$y}\n";
     }
 
     my $tset =  new Set::IntSpan([[$minx,$maxx]]);
@@ -108,16 +119,3 @@ Y: for my $y ($miny..$maxy)
     printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
     last;
 }
-
-# for my $y ($miny..$maxy)
-# {
-#     my $xset = $sm->{$y};
-#     next if $xset->size() == $maxx - $minx + 1;
-
-#     my $tset =  new Set::IntSpan([[$minx,$maxx]]);
-#     $tset -= $xset;
-#     my $x = $tset->min();
-
-#     printf "Stage 2: b($x,$y) = %s\n", 4000000 * $x + $y;
-#     last;
-# }
