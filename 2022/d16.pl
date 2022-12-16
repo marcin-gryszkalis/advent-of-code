@@ -49,9 +49,7 @@ sub dfs
     for my $dst (@usable)
     {
         next if $dst eq $src;
-        next if $rate{$dst} == 0;
-        next if exists $counted->{$dst};
-        next if exists $open->{$dst};
+        next if exists $counted->{$dst} || exists $open->{$dst};
 
         my $timediff = $apsp->path_length($src,$dst) + 1;
         next if $time + $timediff > $limit;
