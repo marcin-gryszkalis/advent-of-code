@@ -18,10 +18,10 @@ my @shapes;
 my $xs = undef;
 $xs->{maxx} = 3;
 $xs->{maxy} = 0;
-$xs->{m}->{0}->{0} = 1;
-$xs->{m}->{1}->{0} = 1;
-$xs->{m}->{2}->{0} = 1;
-$xs->{m}->{3}->{0} = 1;
+$xs->{m}->{0,0} = 1;
+$xs->{m}->{1,0} = 1;
+$xs->{m}->{2,0} = 1;
+$xs->{m}->{3,0} = 1;
 push(@shapes, $xs);
 
  #
@@ -30,11 +30,11 @@ push(@shapes, $xs);
 $xs = undef;
 $xs->{maxx} = 2;
 $xs->{maxy} = 2;
-$xs->{m}->{1}->{0} = 1;
-$xs->{m}->{0}->{1} = 1;
-$xs->{m}->{1}->{1} = 1;
-$xs->{m}->{2}->{1} = 1;
-$xs->{m}->{1}->{2} = 1;
+$xs->{m}->{1,0} = 1;
+$xs->{m}->{0,1} = 1;
+$xs->{m}->{1,1} = 1;
+$xs->{m}->{2,1} = 1;
+$xs->{m}->{1,2} = 1;
 push(@shapes, $xs);
 
   #
@@ -43,11 +43,11 @@ push(@shapes, $xs);
 $xs = undef;
 $xs->{maxx} = 2;
 $xs->{maxy} = 2;
-$xs->{m}->{2}->{2} = 1;
-$xs->{m}->{2}->{1} = 1;
-$xs->{m}->{0}->{0} = 1;
-$xs->{m}->{1}->{0} = 1;
-$xs->{m}->{2}->{0} = 1;
+$xs->{m}->{2,2} = 1;
+$xs->{m}->{2,1} = 1;
+$xs->{m}->{0,0} = 1;
+$xs->{m}->{1,0} = 1;
+$xs->{m}->{2,0} = 1;
 push(@shapes, $xs);
 
 #
@@ -57,10 +57,10 @@ push(@shapes, $xs);
 $xs = undef;
 $xs->{maxx} = 0;
 $xs->{maxy} = 3;
-$xs->{m}->{0}->{0} = 1;
-$xs->{m}->{0}->{1} = 1;
-$xs->{m}->{0}->{2} = 1;
-$xs->{m}->{0}->{3} = 1;
+$xs->{m}->{0,0} = 1;
+$xs->{m}->{0,1} = 1;
+$xs->{m}->{0,2} = 1;
+$xs->{m}->{0,3} = 1;
 push(@shapes, $xs);
 
 ##
@@ -68,10 +68,10 @@ push(@shapes, $xs);
 $xs = undef;
 $xs->{maxx} = 1;
 $xs->{maxy} = 1;
-$xs->{m}->{0}->{0} = 1;
-$xs->{m}->{1}->{0} = 1;
-$xs->{m}->{0}->{1} = 1;
-$xs->{m}->{1}->{1} = 1;
+$xs->{m}->{0,0} = 1;
+$xs->{m}->{1,0} = 1;
+$xs->{m}->{0,1} = 1;
+$xs->{m}->{1,1} = 1;
 push(@shapes, $xs);
 
 
@@ -81,7 +81,7 @@ for my $stage (1..2)
     my $stopped = 0; # number of stopped rocks
 
     my $m = undef;
-    for my $x (0..6) { $m->{$x}->{0} = '#' } # floor
+    for my $x (0..6) { $m->{$x,0} = '#' } # floor
 
     my $highest = 0;
     my $highest_mod = 0; # mod for cycles skipped
@@ -152,8 +152,8 @@ for my $stage (1..2)
         {
             for my $y (0..$r->{maxy})
             {
-                next unless exists $r->{m}->{$x}->{$y};
-                next if $nx + $x >= 0 && $nx + $x <= 6 && !exists $m->{$nx+$x}->{$ry+$y};
+                next unless exists $r->{m}->{$x,$y};
+                next if $nx + $x >= 0 && $nx + $x <= 6 && !exists $m->{$nx+$x,$ry+$y};
 
                 $ok = 0;
                 last V1;
@@ -170,8 +170,8 @@ for my $stage (1..2)
         {
             for my $y (0..$r->{maxy})
             {
-                next unless exists $r->{m}->{$x}->{$y};
-                next unless exists $m->{$rx+$x}->{$ny+$y};
+                next unless exists $r->{m}->{$x,$y};
+                next unless exists $m->{$rx+$x,$ny+$y};
 
                 $ok = 0;
                 last V2;
@@ -196,8 +196,8 @@ for my $stage (1..2)
             {
                 for my $y (0..$r->{maxy})
                 {
-                    next unless exists $r->{m}->{$x}->{$y};
-                    $m->{$rx+$x}->{$ry+$y} = $c;
+                    next unless exists $r->{m}->{$x,$y};
+                    $m->{$rx+$x,$ry+$y} = $c;
                     $highest = max($highest, $ry+$y);
                 }
             }
@@ -212,7 +212,7 @@ for my $stage (1..2)
         #     {
         #         for my $x (0..6)
         #         {
-        #             print exists $m->{$x}->{$highest - $y} ? $m->{$x}->{$highest - $y} : '.';
+        #             print exists $m->{$x,$highest - $y} ? $m->{$x,$highest - $y} : '.';
         #         }
         #         print "\n";
         #     }
