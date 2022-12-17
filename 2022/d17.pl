@@ -4,16 +4,14 @@ use strict;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 
-my @f = read_file(\*STDIN, chomp => 1);
-my @jets = split//,$f[0];
+my @jets = split//,read_file(\*STDIN, chomp => 1);
 
 my @tostopafter = qw/2022 1000000000000/;
 
 my @shapes;
-my $shapess =
+my @ss = split/\n\n/,
 '####
 
  #
@@ -32,7 +30,6 @@ my $shapess =
 ##
 ##';
 
-my @ss = split(/\n\n/, $shapess);
 my $si = 0;
 while (my $s = shift @ss)
 {
@@ -88,7 +85,7 @@ for my $stage (1..2)
             push(@a_stopped, $stopped - $ps); # we save diffs
             push(@a_highest, $highest - $ph);
 
-            my $headskip = 10; # skip few potential cycles at the beginning
+            my $headskip = 3; # skip few potential cycles at the beginning
             my $nc = $icycle - $headskip + 1; # number of potential cycles to be checked
             if ($icycle > $headskip && $nc > 1 && $nc % 2 == 0) # must be divisible by 2
             {
@@ -97,7 +94,6 @@ for my $stage (1..2)
                 my $h1 = sum(@a_highest[$headskip+0..$headskip+$nc/2-1]);
                 my $h2 = sum(@a_highest[$headskip+$nc/2..$headskip+$nc-1]);
 
-                # print "cycle check: cycle=$icycle, nc=$nc, [$s1,$s2] [$h1,$h2]\n";
                 if ($s1 == $s2 && $h1 == $h2) # we have a cycle!
                 {
                     # cycles to be skipped
@@ -199,5 +195,6 @@ for my $stage (1..2)
         # }
 
     }
+
     printf "Stage $stage: %s\n", $highest_mod + $highest;
 }
