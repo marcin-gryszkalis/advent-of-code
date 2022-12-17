@@ -13,67 +13,46 @@ my @jets = split//,$f[0];
 my @tostopafter = qw/2022 1000000000000/;
 
 my @shapes;
-
-####
-my $xs = undef;
-$xs->{maxx} = 3;
-$xs->{maxy} = 0;
-$xs->{m}->{0,0} = 1;
-$xs->{m}->{1,0} = 1;
-$xs->{m}->{2,0} = 1;
-$xs->{m}->{3,0} = 1;
-push(@shapes, $xs);
+my $shapess =
+'####
 
  #
 ###
  #
-$xs = undef;
-$xs->{maxx} = 2;
-$xs->{maxy} = 2;
-$xs->{m}->{1,0} = 1;
-$xs->{m}->{0,1} = 1;
-$xs->{m}->{1,1} = 1;
-$xs->{m}->{2,1} = 1;
-$xs->{m}->{1,2} = 1;
-push(@shapes, $xs);
 
-  #
-  #
 ###
-$xs = undef;
-$xs->{maxx} = 2;
-$xs->{maxy} = 2;
-$xs->{m}->{2,2} = 1;
-$xs->{m}->{2,1} = 1;
-$xs->{m}->{0,0} = 1;
-$xs->{m}->{1,0} = 1;
-$xs->{m}->{2,0} = 1;
-push(@shapes, $xs);
+  #
+  #
 
 #
 #
 #
 #
-$xs = undef;
-$xs->{maxx} = 0;
-$xs->{maxy} = 3;
-$xs->{m}->{0,0} = 1;
-$xs->{m}->{0,1} = 1;
-$xs->{m}->{0,2} = 1;
-$xs->{m}->{0,3} = 1;
-push(@shapes, $xs);
 
 ##
-##
-$xs = undef;
-$xs->{maxx} = 1;
-$xs->{maxy} = 1;
-$xs->{m}->{0,0} = 1;
-$xs->{m}->{1,0} = 1;
-$xs->{m}->{0,1} = 1;
-$xs->{m}->{1,1} = 1;
-push(@shapes, $xs);
+##';
 
+my @ss = split(/\n\n/, $shapess);
+my $si = 0;
+while (my $s = shift @ss)
+{
+    my $y = 0;
+    my $maxx = 0;
+    for my $l (split /\n/,$s)
+    {
+        my $x = 0;
+        for (split //,$l)
+        {
+            $shapes[$si]->{m}->{$x,$y} = 1 if /#/;
+            $x++;
+        }
+        $maxx = max($maxx,$x-1);
+        $y++;
+    }
+    $shapes[$si]->{maxx} = $maxx;
+    $shapes[$si]->{maxy} = $y;
+    $si++;
+}
 
 for my $stage (1..2)
 {
