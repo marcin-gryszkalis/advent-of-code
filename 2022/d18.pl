@@ -73,7 +73,7 @@ while (scalar(%$q))
 
     $m->{$k} = 2;
 
-    my ($x,$y,$z) = split/,/,$k;
+    my ($x,$y,$z) = split/,/,$k; # because $; = ','
 
     for my $dx (-1..1)
     {
