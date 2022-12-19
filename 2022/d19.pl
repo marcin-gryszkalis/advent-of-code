@@ -1,24 +1,19 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
+use feature qw/state signatures say multidimensional/;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
-use Clone qw/clone/;
+use MCE::Map;
 $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
-
-my $stage1 = 0;
-my $stage2 = 0;
 
 my $m;
 for (@f)
 {
     # Blueprint 1: Each ore robot costs 4 ore. Each cly robot costs 2 ore. Each obsidian robot costs 3 ore and 14 cly. Each geode robot costs 2 ore and 7 obsidian.
-#    s/Blueprint (\d):\s+//;
-
     my @a = m/(\d+)/g;
     my $b = $a[0];
 
@@ -28,153 +23,136 @@ for (@f)
     $m->{$b}->{obs_cly} = $a[4];
     $m->{$b}->{geo_ore} = $a[5];
     $m->{$b}->{geo_obs} = $a[6];
+    
+    $m->{$b}->{max_ore} = max($a[1],$a[2],$a[3],$a[5]);
+    $m->{$b}->{max_cly} = $a[4];
+    $m->{$b}->{max_obs} = $a[6];
 }
 
-#print Dumper $m;
+my $timelimit = 24;
 
-my $cost;
-
-my $best = 0;
-my $memoi;
-my $bp = 0;
-my $i = 0;
-
-my @track;
-
-my @bestgeoat = ();
-
-sub dfs
+sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
 {
-    $i++;
-    my $min = shift;
-    my $ore = shift;
-    my $cly = shift;
-    my $obs = shift;
-    my $geo = shift;
+    my $cost = $m->{$bp};
 
-    return -1 if $geo < ($bestgeoat[$min] // 0);
-    $bestgeoat[$min] = $geo;
+    state $best;
+    state $memoi;
 
-    my $r_ore = shift;
-    my $r_cly = shift;
-    my $r_obs = shift;
-    my $r_geo = shift;
-
-    if (exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo})
+    if ($min == 1)
     {
-#        print Dumper $memoi;
-        return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
+        $best = 0;
+        $memoi = ();
     }
-    $track[$min-1] = [$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo];
 
-    print "$bp [$min]: $best ($ore,$cly,$obs,$geo) ($r_ore,$r_cly,$r_obs,$r_geo)\n" if $i % 10000 == 0;
-    # no warnings;
-    # print join(",", @bestgeoat)."\n" if $i % 10000 == 0;
-    # use warnings;
-    if ($min == 24)
+    # old, simple but risky and not that effective heurisitc:
+    # 2 is set by experiment :/
+    # 0 is ok for stage 1 but not stage 2
+    # 1 is not good for some input, 2 probably works for 99% of inputs (should be increased along with time limit)
+    # we skip this branch if we have less geodes than best at this time during current search minus this parameter
+    # becuse sometimes we'll get quick increase later 
+    # my $best_goat_heur = 2;
+    # return -1 if $geo < ($bestgeoat[$min] // 0) - $best_goat_heur; 
+    # $bestgeoat[$min] = max($bestgeoat[$min] // 0,$geo);
+
+    # break if we're certain that no more geodes can be generated than current best
+    my $remaining_time = $timelimit - $min + 1;
+    my $max_geo = $geo + $r_geo * $remaining_time + $remaining_time * ($remaining_time+1) / 2;
+    return -1 if $max_geo < $best;
+
+    # memoization
+    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
+
+    # debug track
+    # $track[$min-1] = [$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo];
+
+    if ($min == $timelimit)
     {
-        $ore += $r_ore;
-        $cly += $r_cly;
-        $obs += $r_obs;
         $geo += $r_geo;
 
         if ($geo > $best)
         {
             $best = $geo;
             print "BEST $bp: $best ($ore,$cly,$obs,$geo) ($r_ore,$r_cly,$r_obs,$r_geo)\n";
-#            print Dumper \@track;
-            for my $iii (0..23)
-            {
-                print "BEST $iii > ".join(" ", @{$track[$iii]})."\n";
-            }
         }
         return $geo;
     }
 
     my @res = ();
+
     if ($ore >= $cost->{geo_ore} && $obs >= $cost->{geo_obs})
     {
         my $nore = $ore + $r_ore - $cost->{geo_ore};
         my $ncly = $cly + $r_cly;
         my $nobs = $obs + $r_obs - $cost->{geo_obs};
         my $ngeo = $geo + $r_geo;
-        my $out = dfs($min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs, $r_geo+1);
-        push(@res, $out);
+        push @res, dfs($bp, $min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs, $r_geo+1);
     }
-    if ($ore >= $cost->{obs_ore} && $cly >= $cost->{obs_cly})
+
+    if ($ore >= $cost->{obs_ore} && $cly >= $cost->{obs_cly} && $r_obs < $cost->{max_obs})
     {
         my $nore = $ore + $r_ore - $cost->{obs_ore};
         my $ncly = $cly + $r_cly - $cost->{obs_cly};
         my $nobs = $obs + $r_obs;
         my $ngeo = $geo + $r_geo;
-        my $out = dfs($min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs+1, $r_geo);
-        push(@res, $out);
+        push @res, dfs($bp, $min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs+1, $r_geo);
     }
-    if ($ore >= $cost->{cly_ore})
+
+    if ($ore >= $cost->{cly_ore} && $r_cly < $cost->{max_cly})
     {
         my $nore = $ore + $r_ore - $cost->{cly_ore};
         my $ncly = $cly + $r_cly;
         my $nobs = $obs + $r_obs;
         my $ngeo = $geo + $r_geo;
-        my $out = dfs($min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly+1, $r_obs, $r_geo);
-        push(@res, $out);
+        push @res, dfs($bp, $min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly+1, $r_obs, $r_geo);
     }
-    if ($ore >= $cost->{ore_ore} && $r_ore < 10) # 10?
-    { #die $cost->{ore_ore} if $ore < 4;
+
+    if ($ore >= $cost->{ore_ore} && $r_ore < $cost->{max_ore})
+    { 
         my $nore = $ore + $r_ore - $cost->{ore_ore};
         my $ncly = $cly + $r_cly;
         my $nobs = $obs + $r_obs;
         my $ngeo = $geo + $r_geo;
-        my $out = dfs($min+1, $nore, $ncly, $nobs, $ngeo, $r_ore+1, $r_cly, $r_obs, $r_geo);
-        push(@res, $out);
+        push @res, dfs($bp, $min+1, $nore, $ncly, $nobs, $ngeo, $r_ore+1, $r_cly, $r_obs, $r_geo);
     }
 
-    {
+    { # no new robots
         my $nore = $ore + $r_ore;
         my $ncly = $cly + $r_cly;
         my $nobs = $obs + $r_obs;
         my $ngeo = $geo + $r_geo;
 
-        my $out = dfs($min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs, $r_geo);
-        push(@res, $out);
+        push @res, dfs($bp, $min+1, $nore, $ncly, $nobs, $ngeo, $r_ore, $r_cly, $r_obs, $r_geo);
     }
 
-    # $ore += $r_ore;
-    # $cly += $r_cly;
-    # $obs += $r_obs;
-    # $geo += $r_geo;
-
-    # memoize
-    $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} = max(@res);
-
-    return max(@res);
+    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} = max(@res);
 }
 
-my @bres;
-for my $b (1..scalar(@f))
+sub process($stage, $b)
 {
-
-    @track = ();
-    @bestgeoat = ();
-    $best = 0;
-    $cost = $m->{$b};
-    $memoi = undef;
-    $i = 0;
-
-    #print Dumper $cost; exit;
-    $bp = $b;
-    my $out = dfs(1, 0, 0, 0, 0, 1, 0, 0, 0);
-    push(@bres, $out);
-print Dumper \@bres;
-
+    my $out = dfs($b, 1, 0, 0, 0, 0, 1, 0, 0, 0);
+    print "stage $stage, blueprint $b = $out\n";
+    return $out;
 }
 
-my $bi = 1;
-for my $br (@bres)
+for my $stage (1..2)
 {
-    $stage1 += ($bi * $bres[$bi-1]);
-    $bi++;
+    my $blueprint_max = 100;
+    if ($stage == 2)
+    {
+        $timelimit = 32;
+        $blueprint_max = 3;
+    }
+
+    my @res = mce_map { process $stage, $_ } (1..min(scalar @f, $blueprint_max));
+
+    if ($stage == 1)
+    {
+        my $bi = 1;
+        printf "Stage 1: %s\n", sum map { $_ * $bi++ } @res;
+    }
+    else
+    {
+        printf "Stage 2: %s\n", product @res;
+    }
+
 }
-#print Dumper $memoi;
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
