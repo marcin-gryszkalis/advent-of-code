@@ -23,7 +23,7 @@ for (@f)
     $m->{$b}->{obs_cly} = $a[4];
     $m->{$b}->{geo_ore} = $a[5];
     $m->{$b}->{geo_obs} = $a[6];
-    
+
     $m->{$b}->{max_ore} = max($a[1],$a[2],$a[3],$a[5]);
     $m->{$b}->{max_cly} = $a[4];
     $m->{$b}->{max_obs} = $a[6];
@@ -49,15 +49,15 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
     # 0 is ok for stage 1 but not stage 2
     # 1 is not good for some input, 2 probably works for 99% of inputs (should be increased along with time limit)
     # we skip this branch if we have less geodes than best at this time during current search minus this parameter
-    # becuse sometimes we'll get quick increase later 
+    # becuse sometimes we'll get quick increase later
     # my $best_goat_heur = 2;
-    # return -1 if $geo < ($bestgeoat[$min] // 0) - $best_goat_heur; 
+    # return -1 if $geo < ($bestgeoat[$min] // 0) - $best_goat_heur;
     # $bestgeoat[$min] = max($bestgeoat[$min] // 0,$geo);
 
     # break if we're certain that no more geodes can be generated than current best
     my $remaining_time = $timelimit - $min + 1;
-    my $max_geo = $geo + $r_geo * $remaining_time + $remaining_time * ($remaining_time+1) / 2;
-    return -1 if $max_geo < $best;
+    my $max_geo = $geo + $r_geo * $remaining_time + $remaining_time * ($remaining_time + 1) / 2;
+    return -1 if $max_geo <= $best;
 
     # memoization
     return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
@@ -72,7 +72,7 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
         if ($geo > $best)
         {
             $best = $geo;
-            print "BEST $bp: $best ($ore,$cly,$obs,$geo) ($r_ore,$r_cly,$r_obs,$r_geo)\n";
+            # print "BEST $bp: $best ($ore,$cly,$obs,$geo) ($r_ore,$r_cly,$r_obs,$r_geo)\n";
         }
         return $geo;
     }
@@ -107,7 +107,7 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
     }
 
     if ($ore >= $cost->{ore_ore} && $r_ore < $cost->{max_ore})
-    { 
+    {
         my $nore = $ore + $r_ore - $cost->{ore_ore};
         my $ncly = $cly + $r_cly;
         my $nobs = $obs + $r_obs;
