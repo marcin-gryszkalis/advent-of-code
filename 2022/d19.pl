@@ -42,8 +42,6 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
         $memoi = ();
     }
 
-    # memoization
-    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
 
     # old, simple but risky and not that effective heurisitc:
     # 2 is set by experiment :/
@@ -71,6 +69,9 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
         }
         return $geo;
     }
+
+    # memoization
+    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
 
     my @res = ();
     my $cost = $m->{$bp};
