@@ -33,8 +33,6 @@ my $timelimit = 24;
 
 sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
 {
-    my $cost = $m->{$bp};
-
     state $best;
     state $memoi;
 
@@ -43,6 +41,9 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
         $best = 0;
         $memoi = ();
     }
+
+    # memoization
+    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
 
     # old, simple but risky and not that effective heurisitc:
     # 2 is set by experiment :/
@@ -59,12 +60,6 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
     my $max_geo = $geo + $r_geo * $remaining_time + $remaining_time * ($remaining_time + 1) / 2;
     return -1 if $max_geo <= $best;
 
-    # memoization
-    return $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo} if exists $memoi->{$min,$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo};
-
-    # debug track
-    # $track[$min-1] = [$ore,$cly,$obs,$geo,$r_ore,$r_cly,$r_obs,$r_geo];
-
     if ($min == $timelimit)
     {
         $geo += $r_geo;
@@ -78,6 +73,7 @@ sub dfs($bp, $min, $ore, $cly, $obs, $geo, $r_ore, $r_cly, $r_obs, $r_geo)
     }
 
     my @res = ();
+    my $cost = $m->{$bp};
 
     if ($ore >= $cost->{geo_ore} && $obs >= $cost->{geo_obs})
     {
