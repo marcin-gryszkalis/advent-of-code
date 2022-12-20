@@ -80,8 +80,5 @@ for my $stage (0..1)
 
     my $zat = first { $q[$_] == 0  } 0..$#q;
 
-    printf "Stage %d: %s\n", $stage+1,
-        $q[($zat + 1000) % $l] +
-        $q[($zat + 2000) % $l] +
-        $q[($zat + 3000) % $l];
+    printf "Stage %d: %s\n", $stage+1, sum(map { $q[($zat + $_) % $l] } (1000,2000,3000))
 }
