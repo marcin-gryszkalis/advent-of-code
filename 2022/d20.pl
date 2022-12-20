@@ -16,7 +16,7 @@ my $l = scalar(@f);
 
 for my $stage (0..1)
 {
-    # array ot references to orignial elements (original indexes)
+    # array ot references to original elements (original indexes)
     my @ot;
 
     # create dual-linked circular list
