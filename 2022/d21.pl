@@ -47,6 +47,7 @@ sub calc2($m, $humn)
     return calc($m);
 }
 
+# binary search, assumes that the input function is monotonic (it is true for example and actual inputs)
 my $increasing = (calc2('root', 1000) > calc2('root', 0));
 
 $op{root}->{op} = '-';
