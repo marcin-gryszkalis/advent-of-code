@@ -18,9 +18,6 @@ my %v;
 my %op;
 for (@f)
 {
-    # root: pppw + sjmn
-    # dbpl: 5
-
     if (/(....):\s+(\d+)/)
     {
         $v{$1} = $2;
@@ -30,10 +27,6 @@ for (@f)
         $op{$1}->{a} = $2;
         $op{$1}->{b} = $4;
         $op{$1}->{op} = $3;
-    }
-    else
-    {
-        die $_;
     }
 }
 
@@ -81,7 +74,6 @@ while (1)
     {
         $r = $i;
     }
-
 }
 
 printf "Stage 2: %s\n", $stage2;
