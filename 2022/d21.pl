@@ -46,7 +46,42 @@ sub calc($m)
     return eval "$a $op{$m}->{op} $b";
 }
 
-$stage1 = calc('root');
+printf "Stage 1: %s\n", calc('root');
 
-printf "Stage 1: %s\n", $stage1;
+sub calc2($m, $humn)
+{
+    $v{humn} = $humn;
+    return calc($m);
+}
+
+my $increasing = (calc2('root', 1000) > calc2('root', 0));
+
+$op{root}->{op} = '-';
+
+my $l = 0;
+my $r = 999_999_999_999_999;
+
+while (1)
+{
+    my $i = $l + int(($r-$l)/2);
+    my $x = calc2('root', $i);
+
+    print "$l < $i < $r :: $x\n";
+
+    if ($x == 0)
+    {
+        $stage2 = $i;
+        last;
+    }
+    elsif ($increasing && $x < 0 || !$increasing && $x > 0)
+    {
+        $l = $i;
+    }
+    else
+    {
+        $r = $i;
+    }
+
+}
+
 printf "Stage 2: %s\n", $stage2;
