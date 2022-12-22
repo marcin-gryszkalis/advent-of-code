@@ -56,28 +56,28 @@ my $dir = 0;
 $m->{$x,$y} = $g[$dir];
 
 my $w = 4;
-#$w = 50;
+$w = 50;
 
 my $maxf = $w - 1;
 
 my %facemulx =
 (
-    1 => 2,
-    2 => 0,
+    1 => 1,
+    2 => 2,
     3 => 1,
-    4 => 2,
-    5 => 2,
-    6 => 3
+    4 => 0,
+    5 => 1,
+    6 => 0
 );
 
 my %facemuly =
 (
     1 => 0,
-    2 => 1,
+    2 => 0,
     3 => 1,
-    4 => 1,
+    4 => 2,
     5 => 2,
-    6 => 2
+    6 => 3
 );
 
 
@@ -89,35 +89,35 @@ u 3
 /;
 
 my %rules = (
-'1r' => '6r',
-'1d' => '4u',
-'1l' => '3u',
-'1u' => '2u',
+'1r' => '2l',
+'1d' => '3u',
+'1l' => '4l',
+'1u' => '6l',
 
-'2r' => '3l',
-'2d' => '5d',
-'2l' => '6d',
-'2u' => '1u',
+'2r' => '5r',
+'2d' => '3r',
+'2l' => '1r',
+'2u' => '6d',
 
-'3r' => '4l',
-'3d' => '5l',
-'3l' => '2r',
-'3u' => '1l',
+'3r' => '2d',
+'3d' => '5u',
+'3l' => '4u',
+'3u' => '1d',
 
-'4r' => '6u',
-'4d' => '5u',
-'4l' => '3r',
-'4u' => '1d',
+'4r' => '5l',
+'4d' => '6u',
+'4l' => '1l',
+'4u' => '3l',
 
-'5r' => '6l',
-'5d' => '2d',
-'5l' => '3d',
-'5u' => '4d',
+'5r' => '2r',
+'5d' => '6r',
+'5l' => '4r',
+'5u' => '3d',
 
-'6r' => '1r',
-'6d' => '2l',
-'6l' => '5r',
-'6u' => '4r',
+'6r' => '5d',
+'6d' => '2u',
+'6l' => '1u',
+'6u' => '4d',
 );
 
 # 1-2
@@ -135,15 +135,17 @@ for my $op (@t)
     print "OP($op) $x, $y [$dir]: $op\n";
     if ($op =~ /\d/)
     {
+        while (1)
+        {
+    print STDERR "$x $y $dir\n";
+#    print "$x $y $dir\n";
+            my $dx = $mov[$dir][0];
+            my $dy = $mov[$dir][1];
 
         my $px = $x;
         my $py = $y;
         my $pdir = $dir;
-
-        while (1)
-        {
-            my $dx = $mov[$dir][0];
-            my $dy = $mov[$dir][1];
+        my $pface = $face;
 
             print "::: $face -- $x, $y [$dir]: op $op\n";
 
@@ -216,32 +218,32 @@ for my $op (@t)
                 {
                     print "ROT-CW-AC ";
                     ($fx,$fy) = ($maxf - $fy, $maxf - $fx);
-                    $dir = ($dir + 1) % 4;
+                    $dir = ($dir - 1) % 4;
                 }
                 elsif ($bnb =~ /(rd|lu)/)
                 {
                     print "ROT-CW-BD ";
                     ($fx,$fy) = ($fy, $fx);
-                    $dir = ($dir + 1) % 4;
+                    $dir = ($dir - 1) % 4;
                 }
                 elsif ($bnb =~ /(ur|dl)/)
                 {
                     print "ROT-CCW-AC ";
                     ($fx,$fy) = ($maxf - $fy, $maxf - $fx);
-                    $dir = ($dir - 1) % 4;
+                    $dir = ($dir + 1) % 4;
                 }
                 elsif ($bnb =~ /(dr|ul)/)
                 {
                     print "ROT-CCW-BD ";
                     ($fx,$fy) = ($fy, $fx);
-                    $dir = ($dir - 1) % 4;
+                    $dir = ($dir + 1) % 4;
                 }
                 else
                 {
                     die $bnb;
                 }
 
-                print "($fx,$fy)\n";
+                print "($fx,$fy) dir: $dir\n";
                 $x = $fx + $w*$facemulx{$newface};
                 $y = $fy + $w*$facemuly{$newface};
                 $face = $newface;
@@ -252,20 +254,17 @@ for my $op (@t)
                 $y += $dy;
             }
 
-
-            # if ($x > $maxx) { $x = 0;  }
-            # if ($y > $maxy) { $y = 0;  }
-            # if ($x < 0) { $x = $maxx;  }
-            # if ($y < 0) { $y = $maxy;  }
-
             if (!exists $m->{$x,$y}) { die "$x,$y" }
 
-            if ($m->{$x,$y} eq '#') { $x = $px; $y = $py; $dir = $pdir; last; }
+            if ($m->{$x,$y} eq '#') 
+            { 
+                $x = $px; $y = $py; 
+                $dir = $pdir;#  if defined $b;
+                $face = $pface;
+                last; 
+            }
 
             $m->{$x,$y} = $g[$dir];
-            $px = $x;
-            $py = $y;
-            $pdir = $dir;
             $op--;
 
             last if $op == 0;
@@ -297,3 +296,4 @@ for my $y (0..$maxy)
 $stage1 = ($x + 1) * 4 + ($y + 1) * 1000 + $dir;
 printf "Stage 1: $x $y $dir = %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
+
