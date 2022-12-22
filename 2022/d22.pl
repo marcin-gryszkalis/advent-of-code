@@ -7,79 +7,59 @@ use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
 use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
+use Math::Prime::Util qw/gcd/;
 $; = ',';
-
-my $stage1 = 0;
-my $stage2 = 0;
 
 my @f =  read_file(\*STDIN, chomp => 1);
 my $tx = pop @f;
-pop @f;
-#@f = map { [split//] } @f;
+pop @f; # empty line
 
-my $wy = scalar(@f);
-my $wx = max(map { length $_ } @f);
-my $maxy = $wy - 1;
-my $maxx = $wx - 1;
+my $maxy = scalar(@f) - 1;
+my $maxx = max(map { length $_ } @f) - 1;
+my $w = gcd($maxx+1,$maxy+1); # one face width
+my $fmaxxy = $w - 1; # one face maxy/maxy (it's a square)
 
-my ($sx,$sy) = (-1,0); #,$ex,$ey);
+my ($sx,$sy) = (-1,0); # start
 my $m;
 for my $y (0..$maxy)
 {
     my @r = split//,$f[$y];
     for my $x (0..$maxx)
     {
-        next unless exists $r[$x];
-        next if $r[$x] eq ' ';
+        next if !defined $r[$x] || $r[$x] eq ' ';
         $m->{$x,$y} = $r[$x];
-        $sx = $x if $r[$x] eq '.' && $sx == -1;
+        $sx = $x if $sx == -1 && $r[$x] eq '.';
     }
 }
 
-$tx =~ s/(\d+)/ $1 /g;
-$tx =~ s/^\s+//;
-$tx =~ s/\s+$//;
-my @t = split/ /,$tx;
+my @t = $tx =~ m/(\d+|[LR])/g;
 
-my @mov = (
-[1,0], # R
-[0,1],
-[-1,0],
-[0,-1], # U
-);
+my @mov = ([1,0], [0,1],[-1,0], [0,-1]);
 
-my @g = qw/> V < ^/;
+my @g = qw/> V < ^/; # for drawing
+
 my $x = $sx;
 my $y = $sy;
 my $dir = 0;
 
 $m->{$x,$y} = $g[$dir];
 
-my $w = 4;
-$w = 50;
-
-my $maxf = $w - 1;
-
-my %facemulx =
-(
-    1 => 1,
-    2 => 2,
-    3 => 1,
-    4 => 0,
-    5 => 1,
-    6 => 0
-);
-
-my %facemuly =
-(
-    1 => 0,
-    2 => 0,
-    3 => 1,
-    4 => 2,
-    5 => 2,
-    6 => 3
-);
-
+# map face number to map position
+my %facemulx;
+my %facemuly;
+my $i = 1;
+for my $y (0..$maxy/$w)
+{
+    for my $x (0..$maxx/$w)
+    {
+        if (exists $m->{$x*$w,$y*$w})
+        {
+            $facemulx{$i} = $x;
+            $facemuly{$i} = $y;
+            $i++;
+        }
+    }
+}
 
 my %border = qw/
 r 0
@@ -120,15 +100,6 @@ my %rules = (
 '6u' => '4d',
 );
 
-# 1-2
-# my $rules = {
-# x'1R' => { n => 6, x => '$w', y => '$w - $y', d => 2 }
-# '1D' => { n => 4, x => '$x', y => 0, d => 1 }
-# '4D' => { n => 5, x => '$x', y => 0, d => 1 }
-# '5D' => { n => 2, # x => '$x', y => 0, d => 1 }
-# '2R' => { n => 3, x => '$x', y => 0, d => 1 }
-# };
-
 my $face = 1;
 for my $op (@t)
 {
@@ -137,87 +108,51 @@ for my $op (@t)
     {
         while (1)
         {
-    print STDERR "$x $y $dir\n";
-#    print "$x $y $dir\n";
             my $dx = $mov[$dir][0];
             my $dy = $mov[$dir][1];
 
-        my $px = $x;
-        my $py = $y;
-        my $pdir = $dir;
-        my $pface = $face;
+            my ($px, $py, $pdir, $pface) = ($x, $y, $dir, $face);
 
             print "::: $face -- $x, $y [$dir]: op $op\n";
 
-            # my $nx = $x + $dx;
-            # my $ny = $y + $dy;
             my $fx = $x % $w;
             my $fy = $y % $w;
 
-            my $b = undef;
-            if ($fx == $maxf && $dx == 1)
-            {
-                $b = 'r';
-            }
-            if ($fy == $maxf && $dy == 1)
-            {
-                $b = 'd';
-            }
-            if ($fx == 0 && $dx == -1)
-            {
-                $b = 'l';
-            }
-            if ($fy == 0 && $dy == -1)
-            {
-                $b = 'u';
-            }
+            my $b = undef; # are we crossing the border? which one?
+            $b = 'r' if $fx == $fmaxxy && $dx == 1;
+            $b = 'd' if $fy == $fmaxxy && $dy == 1;
+            $b = 'l' if $fx == 0 && $dx == -1;
+            $b = 'u' if $fy == 0 && $dy == -1;
 
             if (defined $b)
             {
-                my $rule = $rules{"${face}$b"};
-                my ($newface, $nb) = split//,$rule;
+                my ($newface, $nb) = split//,$rules{"${face}$b"};
+                my $bnb = "$b$nb";
 
-                print "rule(${face}$b => $rule)\n";
+                print "rule($face$b => $newface$nb)\n";
 
                 print "FX ($fx,$fy) -> ";
 
-                my $bnb = "$b$nb";
-                if ($bnb =~ /(uu|dd)/)
+                if ($bnb =~ /(lr|rl|ud|du)/)
+                {
+                    ($fx,$fy) = (($fx + $dx) % $w, ($fy + $dy) % $w)
+                }
+                elsif ($bnb =~ /(uu|dd)/)
                 {
                     print "ROT-180-UD ";
-                    ($fx,$fy) = ($maxf - $fx,$fy);
+                    ($fx,$fy) = ($fmaxxy - $fx,$fy);
                     $dir = ($dir + 2) % 4;
                 }
                 elsif ($bnb =~ /(ll|rr)/)
                 {
                     print "ROT-180-RL ";
-                    ($fx,$fy) = ($fx,$maxf - $fy);
+                    ($fx,$fy) = ($fx,$fmaxxy - $fy);
                     $dir = ($dir + 2) % 4;
-                }
-                elsif ($bnb eq 'lr' || $bnb eq 'rl')
-                {
-                    # nothing
-                    $fx += $dx;
-                    $fy += $dy;
-            if ($fx > $maxf) { $fx = 0;  }
-            if ($fy > $maxf) { $fy = 0;  }
-            if ($fx < 0) { $fx = $maxf;  }
-            if ($fy < 0) { $fy = $maxf;  }
-                }
-                elsif ($bnb eq 'ud' || $bnb eq 'du')
-                {
-                    # nothing
-                    $fx += $dx;
-                    $fy += $dy;
-            if ($fx > $maxf) { $fx = 0;  }
-            if ($fy > $maxf) { $fy = 0;  }
-            if ($fx < 0) { $fx = $maxf;  }
-            if ($fy < 0) { $fy = $maxf;  }
                 }
                 elsif ($bnb =~ /(ru|ld)/)
                 {
                     print "ROT-CW-AC ";
-                    ($fx,$fy) = ($maxf - $fy, $maxf - $fx);
+                    ($fx,$fy) = ($fmaxxy - $fy, $fmaxxy - $fx);
                     $dir = ($dir - 1) % 4;
                 }
                 elsif ($bnb =~ /(rd|lu)/)
@@ -229,7 +164,7 @@ for my $op (@t)
                 elsif ($bnb =~ /(ur|dl)/)
                 {
                     print "ROT-CCW-AC ";
-                    ($fx,$fy) = ($maxf - $fy, $maxf - $fx);
+                    ($fx,$fy) = ($fmaxxy - $fy, $fmaxxy - $fx);
                     $dir = ($dir + 1) % 4;
                 }
                 elsif ($bnb =~ /(dr|ul)/)
@@ -238,14 +173,11 @@ for my $op (@t)
                     ($fx,$fy) = ($fy, $fx);
                     $dir = ($dir + 1) % 4;
                 }
-                else
-                {
-                    die $bnb;
-                }
 
                 print "($fx,$fy) dir: $dir\n";
-                $x = $fx + $w*$facemulx{$newface};
-                $y = $fy + $w*$facemuly{$newface};
+
+                $x = $fx + $w * $facemulx{$newface};
+                $y = $fy + $w * $facemuly{$newface};
                 $face = $newface;
             }
             else # standard movement
@@ -254,33 +186,23 @@ for my $op (@t)
                 $y += $dy;
             }
 
-            if (!exists $m->{$x,$y}) { die "$x,$y" }
+            die "OOB $x,$y" unless exists $m->{$x,$y}; # assert
 
-            if ($m->{$x,$y} eq '#') 
-            { 
-                $x = $px; $y = $py; 
-                $dir = $pdir;#  if defined $b;
-                $face = $pface;
-                last; 
+            if ($m->{$x,$y} eq '#') # step back
+            {
+                ($x, $y, $dir, $face) = ($px, $py, $pdir, $pface);
+                last;
             }
 
             $m->{$x,$y} = $g[$dir];
-            $op--;
 
+            $op--;
             last if $op == 0;
         }
     }
-    elsif ($op eq 'R')
-    {
-        $dir = ($dir + 1) % 4;
-    }
-    elsif ($op eq 'L')
-    {
-        $dir = ($dir - 1) % 4;
-    }
     else
     {
-        die $op;
+        $dir = ($dir + ($op eq 'R' ? 1 : -1)) % 4;
     }
 
 }
@@ -293,7 +215,5 @@ for my $y (0..$maxy)
     }
     print "\n";
 }
-$stage1 = ($x + 1) * 4 + ($y + 1) * 1000 + $dir;
-printf "Stage 1: $x $y $dir = %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
 
+printf "Stage 2: %s\n", ($x + 1) * 4 + ($y + 1) * 1000 + $dir;
