@@ -33,7 +33,7 @@ my @t = $tx =~ m/(\d+|[LR])/g;
 
 my @mov = ([1,0], [0,1],[-1,0], [0,-1]);
 
-my @g = qw/> V < ^/;
+my @g = qw/> V < ^/; # for drawing
 
 my $x = $sx;
 my $y = $sy;
@@ -49,19 +49,14 @@ for my $op (@t)
 
         while (1)
         {
-            $x += $mov[$dir][0];
-            $y += $mov[$dir][1];
-
-            $x = 0 if $x > $maxx;
-            $y = 0 if $y > $maxy;
-            $x = $maxx if $x < 0;
-            $y = $maxy if $y < 0;
+            $x = ($x + $mov[$dir][0]) % ($maxx + 1);
+            $y = ($y + $mov[$dir][1]) % ($maxy + 1);
 
             next unless exists $m->{$x,$y};
 
             if ($m->{$x,$y} eq '#')
             {
-                $x = $px;
+                $x = $px; # step back
                 $y = $py;
                 last;
             }
@@ -84,7 +79,7 @@ for my $y (0..$maxy)
 {
     for my $x (0..$maxx)
     {
-        print exists $m->{$x,$y} ? $m->{$x,$y} : ' ';
+        print $m->{$x,$y} // ' ';
     }
     print "\n";
 }
