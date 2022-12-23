@@ -46,6 +46,18 @@ my $maxi = $i-1;
 
 my @dir = qw/N S W E/;
 
+my %check;
+$check{N} = [ { x => -1, y => -1}, { x => 0, y => -1}, { x => +1, y => -1} ];
+$check{S} = [ { x => -1, y => +1}, { x => 0, y => +1}, { x => +1, y => +1} ];
+$check{W} = [ { x => -1, y => -1}, { x => -1, y => 0}, { x => -1, y => +1} ];
+$check{E} = [ { x => +1, y => -1}, { x => +1, y => 0}, { x => +1, y => +1} ];
+
+my %move;
+$move{N} = { x => 0, y => -1};
+$move{S} = { x => 0, y => +1};
+$move{W} = { x => -1, y => 0};
+$move{E} = { x => +1, y => 0};
+
 my $moved = 0;
 my $round = 0;
 while (1)
@@ -63,16 +75,17 @@ while (1)
     {
         my $x = $e->{$i};
 
-        if (
-                ($m->{$x->{x}-1,$x->{y}-1} // '.') eq '.' &&
-                ($m->{$x->{x}-1,$x->{y}  } // '.') eq '.' &&
-                ($m->{$x->{x}-1,$x->{y}+1} // '.') eq '.' &&
-                ($m->{$x->{x}  ,$x->{y}-1} // '.') eq '.' &&
-                ($m->{$x->{x}  ,$x->{y}+1} // '.') eq '.' &&
-                ($m->{$x->{x}+1,$x->{y}-1} // '.') eq '.' &&
-                ($m->{$x->{x}+1,$x->{y}  } // '.') eq '.' &&
-                ($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
-            )
+        my %possible = ();
+        for my $d (@dir)
+        {
+            $possible{$d} = (
+                ($m->{$x->{x} + $check{$d}->[0]->{x},$x->{y} + $check{$d}->[0]->{y}} // '.') eq '.' &&
+                ($m->{$x->{x} + $check{$d}->[1]->{x},$x->{y} + $check{$d}->[1]->{y}} // '.') eq '.' &&
+                ($m->{$x->{x} + $check{$d}->[2]->{x},$x->{y} + $check{$d}->[2]->{y}} // '.') eq '.'
+                );
+        }
+
+        if (all { $possible{$_} } @dir)
         {
             $x->{p} = 'X';
             next I;
@@ -80,106 +93,35 @@ while (1)
 
         for my $d (@dir)
         {
-            if ($d eq 'N')
+            next unless $possible{$d};
+            $x->{p} = $d;
+
+            my $k = ($x->{x} + $move{$d}->{x}).$;.($x->{y} + $move{$d}->{y});
+            if (exists $p->{$k}) # there's already a proposal for this x,y
             {
-                if (
-                    ($m->{$x->{x}-1,$x->{y}-1} // '.') eq '.' &&
-                    ($m->{$x->{x},  $x->{y}-1} // '.') eq '.' &&
-                    ($m->{$x->{x}+1,$x->{y}-1} // '.') eq '.'
-                    )
-                {
-                    $x->{p} = 'N';
-                    if (exists $p->{$x->{x},$x->{y}-1}) # there's already a proposal for this x,y
-                    {
-                        $e->{$p->{$x->{x},$x->{y}-1}}->{s} = 1;
-                    }
-                    else
-                    {
-                        $p->{$x->{x},$x->{y}-1} = $i;
-                    }
-                        next I;
-                }
+                $e->{$p->{$k}}->{s} = 1; # we stop one who was there (don't delete the proposal as the conflict may apply to 2, 3 or 4 elves)
+            }
+            else
+            {
+                $p->{$k} = $i; # add new proposal
             }
 
-
-            if ($d eq 'S')
-            {
-                if (
-                    ($m->{$x->{x}-1,$x->{y}+1} // '.') eq '.' &&
-                    ($m->{$x->{x},  $x->{y}+1} // '.') eq '.' &&
-                    ($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
-                    )
-                {
-                    $x->{p} = 'S';
-                    if (exists $p->{$x->{x},$x->{y}+1}) # there's already a proposal for this x,y
-                    {
-                        $e->{$p->{$x->{x},$x->{y}+1}}->{s} = 1;
-                    }
-                    else
-                    {
-                        $p->{$x->{x},$x->{y}+1} = $i;
-                    }
-                        next I;
-                }
-            }
-
-            if ($d eq 'W')
-            {
-                if (
-                    ($m->{$x->{x}-1,$x->{y}-1} // '.') eq '.' &&
-                    ($m->{$x->{x}-1,$x->{y}} // '.') eq '.' &&
-                    ($m->{$x->{x}-1,$x->{y}+1} // '.') eq '.'
-                    )
-                {
-                    $x->{p} = 'W';
-                    if (exists $p->{$x->{x}-1,$x->{y}}) # there's already a proposal for this x,y
-                    {
-                        $e->{$p->{$x->{x}-1,$x->{y}}}->{s} = 1;
-                    }
-                    else
-                    {
-                        $p->{$x->{x}-1,$x->{y}} = $i;
-                    }
-                        next I;
-                }
-            }
-
-            if ($d eq 'E')
-            {
-                if (
-                    ($m->{$x->{x}+1,$x->{y}-1} // '.') eq '.' &&
-                    ($m->{$x->{x}+1,$x->{y}} // '.') eq '.' &&
-                    ($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
-                    )
-                {
-                    $x->{p} = 'E';
-                    if (exists $p->{$x->{x}+1,$x->{y}}) # there's already a proposal for this x,y
-                    {
-                        $e->{$p->{$x->{x}+1,$x->{y}}}->{s} = 1;
-                    }
-                    else
-                    {
-                        $p->{$x->{x}+1,$x->{y}} = $i;
-                    }
-                        next I;
-                }
-            }
-
+            next I;
         }
     }
 
     $moved = 0;
     for my $pp (keys %$p)
     {
-        my $i = $p->{$pp};
-        next if $e->{$i}->{s};
+        my $x = $e->{$p->{$pp}};
+        next if $x->{s};
 
-        my ($dx,$dy) = split/,/,$pp;
+        my ($dx,$dy) = split/$;/,$pp;
 
-        $m->{$e->{$i}->{x},$e->{$i}->{y}} = '.';
+        $m->{$x->{x},$x->{y}} = '.';
         $m->{$pp} = '#';
-        $e->{$i}->{x} = $dx;
-        $e->{$i}->{y} = $dy;
+        $x->{x} = $dx;
+        $x->{y} = $dy;
 
         $moved++;
     }
@@ -200,16 +142,15 @@ while (1)
 
     push(@dir, shift(@dir)); # rotate directions
 
-# $stage2 = 0;
-# for my $y ($miny..$maxy)
-# {
-#     for my $x ($minx..$maxx)
-#     {
-#         print ($m->{$x,$y} // ".");
-#         $stage2 += ($m->{$x,$y} // ".") eq '.';
-#     }
-#     print "\n";
-# }
+    # draw the map
+    for my $y ($miny..$maxy)
+    {
+        for my $x ($minx..$maxx)
+        {
+            print ($m->{$x,$y} // ".");
+        }
+        print "\n";
+    }
 
 
 }
