@@ -17,11 +17,6 @@ my $stage2 = 0;
 my $maxys = scalar(@f) - 1;
 my $maxxs = max(map { length $_ } @f) - 1;
 
-my $maxx = 0;
-my $maxy = 0;
-my $minx = 1000;
-my $miny = 1000;
-
 my ($sx,$sy) = (-1,0); # start
 my $m;
 my $i = 0;
@@ -38,16 +33,14 @@ for my $y (0..$maxys)
 
         $m->{$x,$y} = '#';
 
-        $maxx = max($maxx, $x);
-        $maxy = max($maxy, $y);
-        $minx = min($minx, $x);
-        $miny = min($miny, $y);
-
-
         $i++;
     }
 }
 
+my $maxx = max(map { $e->{$_}->{x} } keys %$e);
+my $minx = min(map { $e->{$_}->{x} } keys %$e);
+my $maxy = max(map { $e->{$_}->{y} } keys %$e);
+my $miny = min(map { $e->{$_}->{y} } keys %$e);
 
 my $maxi = $i-1;
 
@@ -55,32 +48,30 @@ my @dir = qw/N S W E/;
 
 my $moved = 0;
 my $round = 0;
-for my $r (1..1000000)
+while (1)
 {
-    $round = $r;
+    $round++;
     my $p = undef;
 
     for my $i (0..$maxi)
     {
         $e->{$i}->{s} = 0; # stopped by conflict
-        $e->{$i}->{p} = 0; # stopped by conflict
+        $e->{$i}->{p} = 0; # save proposal (for debugging)
     }
 
     I: for my $i (0..$maxi)
     {
         my $x = $e->{$i};
 
-
         if (
-
-($m->{$x->{x}-1,$x->{y}-1} // '.') eq '.' &&
-($m->{$x->{x}-1,$x->{y}  } // '.') eq '.' &&
-($m->{$x->{x}-1,$x->{y}+1} // '.') eq '.' &&
-($m->{$x->{x}  ,$x->{y}-1} // '.') eq '.' &&
-($m->{$x->{x}  ,$x->{y}+1} // '.') eq '.' &&
-($m->{$x->{x}+1,$x->{y}-1} // '.') eq '.' &&
-($m->{$x->{x}+1,$x->{y}  } // '.') eq '.' &&
-($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
+                ($m->{$x->{x}-1,$x->{y}-1} // '.') eq '.' &&
+                ($m->{$x->{x}-1,$x->{y}  } // '.') eq '.' &&
+                ($m->{$x->{x}-1,$x->{y}+1} // '.') eq '.' &&
+                ($m->{$x->{x}  ,$x->{y}-1} // '.') eq '.' &&
+                ($m->{$x->{x}  ,$x->{y}+1} // '.') eq '.' &&
+                ($m->{$x->{x}+1,$x->{y}-1} // '.') eq '.' &&
+                ($m->{$x->{x}+1,$x->{y}  } // '.') eq '.' &&
+                ($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
             )
         {
             $x->{p} = 'X';
@@ -141,7 +132,6 @@ for my $r (1..1000000)
                     )
                 {
                     $x->{p} = 'W';
-
                     if (exists $p->{$x->{x}-1,$x->{y}}) # there's already a proposal for this x,y
                     {
                         $e->{$p->{$x->{x}-1,$x->{y}}}->{s} = 1;
@@ -162,8 +152,7 @@ for my $r (1..1000000)
                     ($m->{$x->{x}+1,$x->{y}+1} // '.') eq '.'
                     )
                 {
-                                        $x->{p} = 'E';
-
+                    $x->{p} = 'E';
                     if (exists $p->{$x->{x}+1,$x->{y}}) # there's already a proposal for this x,y
                     {
                         $e->{$p->{$x->{x}+1,$x->{y}}}->{s} = 1;
@@ -179,15 +168,11 @@ for my $r (1..1000000)
         }
     }
 
-
-
-#print Dumper $p;
-#print Dumper $e;
-$moved = 0;
+    $moved = 0;
     for my $pp (keys %$p)
     {
         my $i = $p->{$pp};
-        next if $e->{$i}->{s}; #
+        next if $e->{$i}->{s};
 
         my ($dx,$dy) = split/,/,$pp;
 
@@ -197,80 +182,24 @@ $moved = 0;
         $e->{$i}->{y} = $dy;
 
         $moved++;
-
-        $maxx = max($maxx, $dx);
-        $maxy = max($maxy, $dy);
-        $minx = min($minx, $dx);
-        $miny = min($miny, $dy);
     }
 
-if ($r == 10)
-{
-while (0) ###  stage1
-{
-    my $shrink = 1;
-    my $y = $miny;
-    for my $x ($minx..$maxx)
+    $maxx = max(map { $e->{$_}->{x} } keys %$e);
+    $minx = min(map { $e->{$_}->{x} } keys %$e);
+    $maxy = max(map { $e->{$_}->{y} } keys %$e);
+    $miny = min(map { $e->{$_}->{y} } keys %$e);
+
+    printf "$round %s: $minx,$miny - $maxx,$maxy :: moved: %d\n", join("",@dir), $moved;
+
+    if ($round == 10)
     {
-        if (($m->{$x,$y} // ".") eq '#')
-        {
-            $shrink = 0;
-            last;
-        }
+        $stage1 = ($maxx - $minx + 1) * ($maxy - $miny + 1) - scalar(keys %$e);
     }
-    $miny++ if $shrink;
-    next if $shrink;
 
-    $shrink = 1;
-    $y = $maxy;
-    for my $x ($minx..$maxx)
-    {
-        if (($m->{$x,$y} // ".") eq '#')
-        {
-            $shrink = 0;
-            last;
-        }
-    }
-    $maxy-- if $shrink;
-    next if $shrink;
+    last if $moved == 0;
 
-    $shrink = 1;
-    my $x = $minx;
-    for my $y ($miny..$maxy)
-    {
-        if (($m->{$x,$y} // ".") eq '#')
-        {
-            $shrink = 0;
-            last;
-        }
-    }
-    $minx++ if $shrink;
-    next if $shrink;
+    push(@dir, shift(@dir)); # rotate directions
 
-    $shrink = 1;
-    $x = $maxx;
-    for my $y ($miny..$maxy)
-    {
-        if (($m->{$x,$y} // ".") eq '#')
-        {
-            $shrink = 0;
-            last;
-        }
-    }
-    $maxx-- if $shrink;
-    next if $shrink;
-
-    last;
-}
-
-$stage1 = ($maxx - $minx + 1) * ($maxy - $miny + 1) - scalar(keys %$e);
-}
-
-printf "$minx,$miny - $maxx,$maxy :: maxi($maxi) round $r : %s -- moved: %d\n", join("",@dir), $moved;
-push(@dir, shift(@dir)); # rotate directions
-
-
-last if $moved == 0;
 # $stage2 = 0;
 # for my $y ($miny..$maxy)
 # {
