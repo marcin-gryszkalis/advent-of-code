@@ -5,9 +5,6 @@ use feature qw/state signatures say multidimensional/;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce/;
-use Algorithm::Combinatorics qw(combinations permutations variations);
-use Clone qw/clone/;
-$; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
@@ -66,5 +63,3 @@ sub dec2snafu($a)
 my $sum = sum(map { snafu2dec($_) } @f);
 
 printf "Stage 1: %s (%s)\n", dec2snafu($sum), $sum;
-print "\n";
-
