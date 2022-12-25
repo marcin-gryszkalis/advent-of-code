@@ -45,19 +45,16 @@ my %xmap = qw/
 
 sub dec2snafu($a)
 {
-    $a = dec2pent($a);
-    my @x = reverse(split(//, $a));
-
-    my @out = @x;
+    my @x = reverse(split(//, dec2pent($a)));
     my $k = 0;
     while (defined $x[$k])
     {
-        $out[$k] = $xmap{$x[$k]};
         $x[$k+1]++ if $x[$k] > 2;
+        $x[$k] = $xmap{$x[$k]};
         $k++;
     }
 
-    return join("", reverse @out)
+    return join("", reverse @x)
 }
 
 my $sum = sum(map { snafu2dec($_) } @f);
