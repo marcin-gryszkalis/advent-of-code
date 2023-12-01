@@ -10,43 +10,26 @@ $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
+my @nums = qw/one two three four five six seven eight nine/;
 
-my %m = qw/
-    one 1
-    two 2
-    three 3
-    four 4
-    five 5
-    six 6
-    seven 7
-    eight 8
-    nine 9
-/;
+my %m = map { $_ => $_ } (1..9);
 
 for my $stage (1..2)
 {
     my $sum = 0;
-    for my $s (@f)
+    if ($stage == 2)
     {
-        $_ = $s;
-        if ($stage == 2)
-        {
-            for my $p (keys %m)
-            {
-                s/$p/$p$m{$p}$p/g; # overlapping "eightwo"!
-            }
-        }
-
-        s/^\D+//;
-        s/\D+$//;
-        $sum  += substr($_,0,1).substr($_,-1);
-
+        my $i = 1;
+        %m = (%m, map { $_ => $i++ } @nums);
     }
 
-    printf "Stage $stage: %s\n", $sum;
+    my $re = join("|", keys %m);
+
+    for (@f)
+    {
+        my @h = map { $m{$_} } /(?=($re))/g; # positive look-ahead doesn't move position -> handle overlapping matches
+        $sum += $h[0].$h[-1];
+    }
+
+    print "Stage $stage: $sum\n";
 }
-
-
-#print Dumper \@f;
