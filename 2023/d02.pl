@@ -14,43 +14,28 @@ my @f = read_file(\*STDIN, chomp => 1);
 my $stage1 = 0;
 my $stage2 = 0;
 
-G: for (@f)
+my %s1limit = qw/red 12 green 13 blue 14/;
+
+for (@f)
 {
-    m/^Game (\d+): (.*)/;
-    my $id =  $1;
-    my $r = $2;
-    my @a = split/; /,$r;
+    my ($id, $r) = m/^Game (\d+): (.*)/g;
+    my %max;
+    $max{red} = $max{green} = $max{blue} = 0;
+
     my $bad = 0;
-
-    my $maxr = 0;
-    my $maxb = 0;
-    my $maxg = 0;
-
-    for my $x (@a)
+    for my $x ($r =~ m/(\S.*?(;|$))/g)
     {
-        my @p = ($x =~ m/(\d+ \D+)/g);
-        for my $k (@p)
+        for my $k ($x =~ m/(\d+ \D+)/g)
         {
-#            print "$id ::: $x ::: $k\n";
-            $k =~ m/(\d+) (\S+)/;
-            my $col = $2;
-            my $v = $1;
-            print "($2 $1)\n";
-            $bad = 1 if $col =~ /red/ && $v > 12;
-            $bad = 1 if $col =~ /green/ && $v > 13;
-            $bad = 1 if $col =~ /blue/ && $v > 14;
+            my ($v, $col) = ($k =~ m/(\d+) ([a-z]+)/g);
 
-            $maxr = max($maxr, $v) if $col =~ /red/;
-            $maxg = max($maxg, $v) if $col =~ /green/;
-            $maxb = max($maxb, $v) if $col =~ /blue/;
+            $bad = 1 if $v > $s1limit{$col};
+            $max{$col} = max($v, $max{$col});
         }
     }
 
-    my $power = $maxr * $maxg * $maxb;
-
-    $stage2 += $power;
-print "!!!$id!!! $power\n";
     $stage1 += $id unless $bad;
+    $stage2 += product(values %max);
 }
 
 printf "Stage 1: %s\n", $stage1;
