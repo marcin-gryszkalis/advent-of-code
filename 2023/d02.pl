@@ -19,8 +19,7 @@ my %s1limit = qw/red 12 green 13 blue 14/;
 for (@f)
 {
     my ($id, $r) = m/^Game (\d+): (.*)/g;
-    my %max;
-    $max{red} = $max{green} = $max{blue} = 0;
+    my %max = qw/red 0 green 0 blue 0/;
 
     my $bad = 0;
     for my $x ($r =~ m/(\S.*?(;|$))/g)
