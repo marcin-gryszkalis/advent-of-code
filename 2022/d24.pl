@@ -46,7 +46,7 @@ for my $y (0..$maxy)
     }
 }
 
-my $move =
+my $moves =
 {
     '>' => [1,0],
     'v' => [0,1],
@@ -99,8 +99,8 @@ if (!defined $bstate)
         for my $i (keys %$e)
         {
             my $b = $e->{$i};
-            $b->{x} += $move->{$b->{d}}->[0];
-            $b->{y} += $move->{$b->{d}}->[1];
+            $b->{x} += $moves->{$b->{d}}->[0];
+            $b->{y} += $moves->{$b->{d}}->[1];
             $b->{x} = $minx+1 if $b->{x} == $maxx;
             $b->{y} = $miny+1 if $b->{y} == $maxy;
             $b->{x} = $maxx-1 if $b->{x} == $minx;
@@ -181,10 +181,10 @@ PASS: for my $pass (1..3)
         my $nb = $bstate->[$nextr];
         my $nm = $mstate->[$nextr];
 
-        for my $d (qw/> v < ^ ./)
+        for my $d (keys %$moves)
         {
-            my $nx = $p->{x} + $move->{$d}->[0];
-            my $ny = $p->{y} + $move->{$d}->[1];
+            my $nx = $p->{x} + $moves->{$d}->[0];
+            my $ny = $p->{y} + $moves->{$d}->[1];
 
             next if $nx < $minx || $nx > $maxx;
             next if $ny < $miny || $ny > $maxy;
