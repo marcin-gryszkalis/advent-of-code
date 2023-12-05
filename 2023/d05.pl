@@ -10,21 +10,18 @@ use Clone qw/clone/;
 $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
-
-my $stage1 = 9999999999;
-my $stage2 = 9999999999;
-
-my @t = qw/seed soil fertilizer water light temperature humidity location/;
-
 my @seeds = (shift(@f) =~ /(\d+)/g);
 
+my $stage1 = 9_999_999_999;
+
+my @labels;
 my $m;
 my $label;
 for (@f)
 {
     if (/(.*) map:/)
     {
-        $label = $1;
+        push(@labels, $label = $1);
         next;
     }
 
@@ -42,12 +39,9 @@ for (@f)
 
 for my $s (@{clone(\@seeds)})
 {
-    T: for my $i (0..scalar(@t)-2)
+    T: for my $label (@labels)
     {
-        my $l0 = $t[$i];
-        my $l1 = $t[$i+1];
-
-        for my $r (@{$m->{"$l0-to-$l1"}})
+        for my $r (@{$m->{$label}})
         {
             if ($s >= $r->{b} && $s <= $r->{e})
             {
@@ -57,9 +51,8 @@ for my $s (@{clone(\@seeds)})
         }
     }
 
-    $stage1 = min($s, $stage1);
+    $stage1 = min($stage1, $s);
 }
-
 
 my @ranges = ();
 while (my $s0 = shift @seeds)
@@ -73,12 +66,8 @@ while (my $s0 = shift @seeds)
     push(@ranges, $r);
 }
 
-
-T: for my $i (0..scalar(@t)-2)
+T: for my $label (@labels)
 {
-    my $l0 = $t[$i];
-    my $l1 = $t[$i+1];
-
     my @newranges = ();
 
     R: while (my $range = shift @ranges)
@@ -86,7 +75,7 @@ T: for my $i (0..scalar(@t)-2)
 #        print "$i r: ($range->{b} - $range->{e})\n";
 
         my $xfered = 0;
-        for my $r (@{$m->{"$l0-to-$l1"}})
+        for my $r (@{$m->{$label}})
         {
             next if $r->{b} > $range->{e};
             next if $r->{e} < $range->{b};
@@ -126,10 +115,7 @@ T: for my $i (0..scalar(@t)-2)
     @ranges = @newranges;
 }
 
-for my $range (@ranges)
-{
-    $stage2 = min($stage2, $range->{b});
-}
+my $stage2 = min(map { $_->{b} } @ranges);
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
