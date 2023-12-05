@@ -71,7 +71,7 @@ for my $label (@labels)
         my $xfered = 0;
         for my $t (@{$m->{$label}})
         {
-            my $xr = $t->{s}->intersect($range);
+            my $xr = $range->intersect($t->{s});
             next if $xr->empty;
 
             $xfered = 1;
