@@ -5,6 +5,7 @@ use feature qw/state signatures say multidimensional/;
 use File::Slurp;
 use Data::Dumper;
 use List::Util qw/min max first sum product all any uniq head tail reduce zip/;
+use POSIX qw/ceil floor/;
 use Algorithm::Combinatorics qw(combinations permutations variations);
 use Clone qw/clone/;
 $; = ',';
@@ -36,6 +37,12 @@ for my $p (0..$s2t)
 {
     $stage2++ if ($s2t - $p) * $p > $s2d;
 }
+
+# alt O(1) - just solve it :)
+my $delta = $s2t ** 2 - 4 * (-1) * (-$s2d);
+my $x1 = (-$s2t - sqrt($delta)) / 2 * (-1);
+my $x2 = (-$s2t + sqrt($delta)) / 2 * (-1);
+$stage2 = floor($x1) - ceil($x2) + 1;
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
