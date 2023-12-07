@@ -104,10 +104,8 @@ for my $stage (1..2)
     $i = 1;
     for my $h (@xh)
     {
-        $out += $bids{$h} * $i;
-        $i++;
+        $out += $bids{$h} * $i++;
     }
 
     printf "Stage $stage: %s\n", $out;
-
 }
