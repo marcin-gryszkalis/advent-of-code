@@ -14,8 +14,6 @@ $; = ',';
 my @f = read_file(\*STDIN, chomp => 1);
 
 my @strengths = qw/23456789TJQKA J23456789TQKA/;
-my $i = 0;
-my %score = map { $_ => $i++ } qw/11111 1112 122 113 23 14 5/;
 
 my @hands = ();
 my %bids = ();
@@ -29,7 +27,7 @@ for (@f)
 
 for my $stage (1..2)
 {
-    $i = 0;
+    my $i = 0;
     my %strength = map { $_ => $i++ } split//, $strengths[$stage-1];
 
     my %figures = ();
@@ -45,19 +43,19 @@ for my $stage (1..2)
         }
 
         my %cj = frequency split//,$hj;
-        $figures{$h} = $score{join("", sort values %cj)};
+        # direct use: 11111 2111 221 311 32 41 5
+        $figures{$h} = reverse join("", sort values %cj);
     }
 
     sub hcomp
     {
         my ($a, $b, $fgs, $str) = @_;
-        return $fgs->{$a} <=> $fgs->{$b} if $fgs->{$a} != $fgs->{$b};
+        return $fgs->{$a} cmp $fgs->{$b} if $fgs->{$a} != $fgs->{$b};
 
         for (zip([split//,$a],[split//,$b]))
         {
             my ($ax,$bx) = @$_;
-            next if $ax eq $bx;
-            return $str->{$ax} <=> $str->{$bx};
+            return $str->{$ax} <=> $str->{$bx} if $ax ne $bx;
         }
 
         die "the same ($a,$b)"; # assert uniq-ness
