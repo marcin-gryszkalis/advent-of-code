@@ -26,18 +26,15 @@ for (@f)
     $bids{$h} = $bid;
 }
 
-for my $stage (2..2)
+for my $stage (1..2)
 {
     my $i = 0;
     my %strength = map { $_ => $i++ } @{$strengths[$stage]};
 
     my %figures = ();
-    my %h2j = ();
 
     for my $h (@hands)
     {
-        my $hs = join("",sort(split(//,$h)));
-
         my $hj = $h;
         if ($stage == 2)
         {
@@ -52,7 +49,6 @@ for my $stage (2..2)
             }
         }
 
-        $h2j{$h} = $hj;
         my $hjs = join("",sort(split(//,$hj)));
 
         my $figure = 0;
@@ -86,7 +82,8 @@ for my $stage (2..2)
 
     sub hcomp
     {
-        return $figures{$a} <=> $figures{$b} if $figures{$a} != $figures{$b};
+        my ($a, $b, $fgs, $str) = @_;
+        return $fgs->{$a} <=> $fgs->{$b} if $fgs->{$a} != $fgs->{$b};
 
         my @aa = split//,$a;
         my @bb = split//,$b;
@@ -95,19 +92,18 @@ for my $stage (2..2)
         {
             my $bx = shift(@bb);
             next if $ax eq $bx;
-            return $strength{$ax} <=> $strength{$bx};
+            return $str->{$ax} <=> $str->{$bx};
         }
 
         die "the same ($a,$b)";
     }
 
-    my @xh = sort({ hcomp } @hands);
+    my @xh = sort({ hcomp($a,$b,\%figures,\%strength) } @hands);
 
     my $out = 0;
     $i = 1;
     for my $h (@xh)
     {
-        print "$h / $h2j{$h} = $figures{$h} ($h2j{$h}) $i * $bids{$h}\n";
         $out += $bids{$h} * $i;
         $i++;
     }
