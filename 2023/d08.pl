@@ -13,15 +13,11 @@ use ntheory qw/lcm/;
 $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
-
-my $stage1 = 0;
-my $stage2 = 0;
-
 my @instr = split//,shift @f;
 shift @f;
 
-my $p1 = 'AAA';
-my @p2 = ();
+my $stage1 = 0;
+my $stage2 = 0;
 
 my $m;
 for (@f)
@@ -29,38 +25,28 @@ for (@f)
     my ($f,$l,$r) = m/[A-Z0-9]+/g;
     $m->{$f}->{L} = $l;
     $m->{$f}->{R} = $r;
-
-    push @p2, $f if $f =~ /A$/;
 }
 
-my %found;
+my $p = 'AAA';
 my $i = 0;
-
-while (1)
+while ($p ne 'ZZZ')
 {
-    last if $p1 eq 'ZZZ';
-    $p1 = $m->{$p1}->{$instr[$i % scalar(@instr)]};
-    $i++;
+    $p = $m->{$p}->{$instr[$i++ % scalar(@instr)]};
 }
 $stage1 = $i;
 
-$i = 0;
-L: while (1)
+my @pi;
+for $p (grep { /A$/ } keys %$m)
 {
-    for my $q (@p2)
+    $i = 0;
+    while ($p !~ /Z$/)
     {
-        if ($q =~ /Z$/)
-        {
-            $found{$q} = $i;
-            last L if scalar keys %found == scalar @p2;
-        }
-
-        $q = $m->{$q}->{$instr[$i % scalar(@instr)]};
+        $p = $m->{$p}->{$instr[$i++ % scalar(@instr)]};
     }
+    push(@pi, $i);
 
-    $i++;
 }
-$stage2 = lcm(values %found);
+$stage2 = lcm(@pi);
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
