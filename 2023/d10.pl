@@ -13,6 +13,23 @@ $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
+my %dirs = (
+    'l' => [-1,0],
+    'r' => [1,0],
+    'u' => [0,-1],
+    'd' => [0,1]
+);
+
+my %exitmap = qw/
+    lu J
+    ru L
+    dl 7
+    dr F
+    du |
+    lr -
+/;
+my %rexitmap = reverse %exitmap;
+
 my $stage1 = 0;
 my $stage2 = 0;
 
@@ -45,77 +62,41 @@ my $maxy = $h - 1;
 my $maxx = $w - 1;
 
 my $l; # pipe
+
+# find starting point
 my $a;
-for my $ddy (-1..1)
+my @exits = ();
+for my $d (keys %dirs)
 {
-    for my $ddx (-1..1)
-    {
-        $x = $startx;
-        $y = $starty;
-        next if abs($ddx) + abs($ddy) != 1;
-        my $nx = $x + $ddx;
-        my $ny = $y + $ddy;
-        next unless exists $t->{$nx,$ny};
-        $a = $t->{$nx,$ny};
-
-        if (
-            $a eq '-' && abs($ddx) == 1 ||
-            $a eq '|' && abs($ddy) == 1 ||
-            $a eq 'J' && ($ddx == 1 || $ddy == 1) ||
-            $a eq '7' && ($ddx == 1 || $ddy == -1) ||
-            $a eq 'F' && ($ddx == -1 || $ddy == -1) ||
-            $a eq 'L' && ($ddx == -1 || $ddy == 1)
-            )
-        {
-            $l->{$x,$y} = 1;
-            $x = $nx;
-            $y = $ny;
-            last;
-        }
-    }
+    my ($dx,$dy) = @{$dirs{$d}};
+    $x = $startx;
+    $y = $starty;
+    my $nx = $x + $dx;
+    my $ny = $y + $dy;
+    next unless exists $t->{$nx,$ny};
+    $a = $t->{$nx,$ny};
+    push(@exits, $d) if
+        $d eq 'u' && $a =~ /[7F\|]/ ||
+        $d eq 'd' && $a =~ /[JL\|]/ ||
+        $d eq 'l' && $a =~ /[LF-]/ ||
+        $d eq 'r' && $a =~ /[J7-]/;
 }
+my $exitcode = join("", sort @exits);
+my ($dx,$dy) = @{$dirs{$exits[0]}};
+$x = $startx + $dx;
+$y = $starty + $dy;
+$a = $t->{$x,$y};
+$l->{$startx,$starty} = 1;
 
+# traverse pipe
 my $c = 0;
 S: while (1)
 {
     $c++;
-#    print "$c $x,$y (pa = $a)\n";
     $l->{$x,$y} = 1;
     die if $c > $maxx*$maxy;
 
-    my @out = ();
-    if ($a eq '|')
-    {
-        push(@out, [$x,$y-1]);
-        push(@out, [$x,$y+1]);
-    }
-    elsif ($a eq '-')
-    {
-        push(@out, [$x-1,$y]);
-        push(@out, [$x+1,$y]);
-    }
-    elsif ($a eq 'L')
-    {
-        push(@out, [$x,$y-1]);
-        push(@out, [$x+1,$y]);
-    }
-    elsif ($a eq 'J')
-    {
-        push(@out, [$x,$y-1]);
-        push(@out, [$x-1,$y]);
-    }
-    elsif ($a eq 'F')
-    {
-        push(@out, [$x,$y+1]);
-        push(@out, [$x+1,$y]);
-    }
-    elsif ($a eq '7')
-    {
-        push(@out, [$x,$y+1]);
-        push(@out, [$x-1,$y]);
-    }
-
-    for my $o (@out)
+    for my $o (map { [$x + $_->[0], $y + $_->[1]] } map { $dirs{$_} } split(//, $rexitmap{$a}))
     {
         my ($nx,$ny) = @$o;
         die unless exists $t->{$nx,$ny};
@@ -147,54 +128,37 @@ for my $x (0..$maxx)
     }
 }
 
-# place some Os on the border
-for my $x (0..$maxx)
+
+# add left side border
+YY: for my $y (0..$maxy)
 {
-    for my $y (0..$maxy)
+    $t->{-1,$y} = 'O';
+}
+
+# flood fill (not really needed)
+my @fillq = grep { $t->{$_} eq 'O' } keys %$t;
+while (my $xy = pop(@fillq))
+{
+    my ($x,$y) = split /$;/, $xy;
+    for my $d (values %dirs)
     {
-        if ($t->{$x,$y} eq '.' && ($x == 0 || $x == $maxx || $y == 0 || $y == $maxy))
-        {
-            $t->{$x,$y} = 'O';
-            $dots--;
-        }
+        my ($dx,$dy) = @$d;
+        my $nx = $x + $dx;
+        my $ny = $y + $dy;
+        next unless exists $t->{$nx,$ny} && $t->{$nx,$ny} eq '.';
+
+        $t->{$nx,$ny} = 'O';
+        $dots--;
+        push(@fillq, "$nx$;$ny");
     }
 }
 
-while (1) # flood fill
-{
-    my $pdots = $dots;
-    for my $x (0..$maxx)
-    {
-        Y: for my $y (0..$maxy)
-        {
-            next unless $t->{$x,$y} eq '.';
-            for my $dy (-1..1)
-            {
-                for my $dx (-1..1)
-                {
-                    next if abs($dx) + abs($dy) != 1;
-                    my $nx = $x + $dx;
-                    my $ny = $y + $dy;
-                    next unless exists $t->{$nx,$ny};
-
-                    if ($t->{$nx,$ny} eq 'O')
-                    {
-                        $t->{$x,$y} = 'O';
-                        $dots--;
-                        next Y;
-                    }
-                }
-            }
-
-        }
-    }
-
-    last if $pdots == $dots || $dots == 0;
-}
+# replace S with actual pipe shape
+$t->{$startx,$starty} = $exitmap{$exitcode};
 
 YY: for my $y (0..$maxy)
 {
-    XX: for my $x (0..$maxx)
+    XX: for my $x (-1..$maxx) # -1 because we added border on left side
     {
         if ($t->{$x,$y} =~ /[OI]/)
         {
@@ -204,7 +168,8 @@ YY: for my $y (0..$maxy)
             my $xl = 0;
             my $p = '';
             my $ny = $y;
-            for my $nx ($x+1 .. $maxx) # go right
+            # scan right
+            for my $nx ($x+1 .. $maxx)
             {
                 last unless exists $t->{$nx,$ny};
                 my $a = $t->{$nx,$ny};
@@ -214,29 +179,31 @@ YY: for my $y (0..$maxy)
                     my $q = $p;
                     while (1)
                     {
-                        $p =~ s/(.*)\|(.*)\|(.*)/$1$2$3/;
-                        $p =~ s/(.*)F(.*)7(.*)/$1$2$3/;
-                        $p =~ s/(.*)7(.*)F(.*)/$1$2$3/;
-                        $p =~ s/(.*)L(.*)J(.*)/$1$2$3/;
-                        $p =~ s/(.*)J(.*)L(.*)/$1$2$3/;
-                        $p =~ s/(.*)L(.*)7(.*)/$1$2$3|/;
-                        $p =~ s/(.*)7(.*)L(.*)/$1$2$3|/;
-                        $p =~ s/(.*)F(.*)J(.*)/$1$2$3|/;
-                        $p =~ s/(.*)J(.*)F(.*)/$1$2$3|/;
+                        $p =~ s/\|(.*)\|/$1/;
+                        $p =~ s/F(.*)7/$1/;
+                        $p =~ s/7(.*)F/$1/;
+                        $p =~ s/L(.*)J/$1/;
+                        $p =~ s/J(.*)L/$1/;
+                        $p =~ s/L(.*)7/$1|/;
+                        $p =~ s/7(.*)L/$1|/;
+                        $p =~ s/F(.*)J/$1|/;
+                        $p =~ s/J(.*)F/$1|/;
                         last if $p eq $q;
                         $q = $p;
                     }
-#print "p($p)\n";
-                    if ($p eq '|')
+
+                    if ($p eq '|') # $p is '|' or ''
                     {
                         $st = $st eq 'O' ? 'I' : 'O';
                     }
 
                     $t->{$nx,$ny} = $st;
                     $dots--;
+
                     last YY if $dots == 0;
                     next XX;
                 }
+
                 $p .= $a;
             }
 
@@ -244,17 +211,18 @@ YY: for my $y (0..$maxy)
     }
 }
 
-die $dots if $dots > 0;
-
 for my $y (0..$maxy)
 {
-    for my $x (0..$maxx)
+    for my $x (-1..$maxx)
     {
         print $t->{$x,$y};
-        $stage2++ if $t->{$x,$y} eq 'I';
     }
     print "\n";
 }
+
+die $dots if $dots > 0;
+
+$stage2 = scalar(grep { $_ eq 'I' } values %$t);
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
