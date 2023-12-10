@@ -128,13 +128,6 @@ for my $x (0..$maxx)
     }
 }
 
-
-# add left side border
-YY: for my $y (0..$maxy)
-{
-    $t->{-1,$y} = 'O';
-}
-
 # flood fill (not really needed)
 my @fillq = grep { $t->{$_} eq 'O' } keys %$t;
 while (my $xy = pop(@fillq))
@@ -158,62 +151,59 @@ $t->{$startx,$starty} = $exitmap{$exitcode};
 
 YY: for my $y (0..$maxy)
 {
-    XX: for my $x (-1..$maxx) # -1 because we added border on left side
+    my $st = 'O';
+    my $x = -1;
+    XX: while (1)
     {
-        if ($t->{$x,$y} =~ /[OI]/)
+        my $nx = $x + 1;
+        my $p = '';
+        while (exists $t->{$nx,$y})
         {
-            my $st = $t->{$x,$y};
+            my $a = $t->{$nx,$y};
 
-            my $xf = 0;
-            my $xl = 0;
-            my $p = '';
-            my $ny = $y;
-            # scan right
-            for my $nx ($x+1 .. $maxx)
+            if ($a eq '.')
             {
-                last unless exists $t->{$nx,$ny};
-                my $a = $t->{$nx,$ny};
-                if ($t->{$nx,$ny} eq '.')
+                $p =~ s/[-OI]//g;
+                my $q = $p;
+                while (1)
                 {
-                    $p =~ s/[-OI]//g;
-                    my $q = $p;
-                    while (1)
-                    {
-                        $p =~ s/\|(.*)\|/$1/;
-                        $p =~ s/F(.*)7/$1/;
-                        $p =~ s/7(.*)F/$1/;
-                        $p =~ s/L(.*)J/$1/;
-                        $p =~ s/J(.*)L/$1/;
-                        $p =~ s/L(.*)7/$1|/;
-                        $p =~ s/7(.*)L/$1|/;
-                        $p =~ s/F(.*)J/$1|/;
-                        $p =~ s/J(.*)F/$1|/;
-                        last if $p eq $q;
-                        $q = $p;
-                    }
-
-                    if ($p eq '|') # $p is '|' or ''
-                    {
-                        $st = $st eq 'O' ? 'I' : 'O';
-                    }
-
-                    $t->{$nx,$ny} = $st;
-                    $dots--;
-
-                    last YY if $dots == 0;
-                    next XX;
+                    $p =~ s/\|(.*)\|/$1/;
+                    $p =~ s/F(.*)7/$1/;
+                    $p =~ s/7(.*)F/$1/;
+                    $p =~ s/L(.*)J/$1/;
+                    $p =~ s/J(.*)L/$1/;
+                    $p =~ s/L(.*)7/$1|/;
+                    $p =~ s/7(.*)L/$1|/;
+                    $p =~ s/F(.*)J/$1|/;
+                    $p =~ s/J(.*)F/$1|/;
+                    last if $p eq $q;
+                    $q = $p;
                 }
 
-                $p .= $a;
+                if ($p eq '|') # $p is '|' or ''
+                {
+                    $st = $st eq 'O' ? 'I' : 'O';
+                }
+
+                $t->{$nx,$y} = $st;
+                $dots--;
+                last YY if $dots == 0;
+
+                $x = $nx;
+                next XX;
             }
 
+            $p .= $a;
+            $nx++;
         }
+
+        last XX;
     }
 }
 
 for my $y (0..$maxy)
 {
-    for my $x (-1..$maxx)
+    for my $x (0..$maxx)
     {
         print $t->{$x,$y};
     }
