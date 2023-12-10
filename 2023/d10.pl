@@ -129,22 +129,22 @@ for my $x (0..$maxx)
 }
 
 # flood fill (not really needed)
-my @fillq = grep { $t->{$_} eq 'O' } keys %$t;
-while (my $xy = pop(@fillq))
-{
-    my ($x,$y) = split /$;/, $xy;
-    for my $d (values %dirs)
-    {
-        my ($dx,$dy) = @$d;
-        my $nx = $x + $dx;
-        my $ny = $y + $dy;
-        next unless exists $t->{$nx,$ny} && $t->{$nx,$ny} eq '.';
+# my @fillq = grep { $t->{$_} eq 'O' } keys %$t;
+# while (my $xy = pop(@fillq))
+# {
+#     my ($x,$y) = split /$;/, $xy;
+#     for my $d (values %dirs)
+#     {
+#         my ($dx,$dy) = @$d;
+#         my $nx = $x + $dx;
+#         my $ny = $y + $dy;
+#         next unless exists $t->{$nx,$ny} && $t->{$nx,$ny} eq '.';
 
-        $t->{$nx,$ny} = 'O';
-        $dots--;
-        push(@fillq, "$nx$;$ny");
-    }
-}
+#         $t->{$nx,$ny} = 'O';
+#         $dots--;
+#         push(@fillq, "$nx$;$ny");
+#     }
+# }
 
 # replace S with actual pipe shape
 $t->{$startx,$starty} = $exitmap{$exitcode};
@@ -152,52 +152,33 @@ $t->{$startx,$starty} = $exitmap{$exitcode};
 YY: for my $y (0..$maxy)
 {
     my $st = 'O';
-    my $x = -1;
-    XX: while (1)
+    my $have = 0;
+    for my $x (0..$maxx)
     {
-        my $nx = $x + 1;
-        my $p = '';
-        while (exists $t->{$nx,$y})
+        my $a = $t->{$x,$y};
+
+        if ($a eq '.')
         {
-            my $a = $t->{$nx,$y};
-
-            if ($a eq '.')
-            {
-                $p =~ s/[-OI]//g;
-                my $q = $p;
-                while (1)
-                {
-                    $p =~ s/\|(.*)\|/$1/;
-                    $p =~ s/F(.*)7/$1/;
-                    $p =~ s/7(.*)F/$1/;
-                    $p =~ s/L(.*)J/$1/;
-                    $p =~ s/J(.*)L/$1/;
-                    $p =~ s/L(.*)7/$1|/;
-                    $p =~ s/7(.*)L/$1|/;
-                    $p =~ s/F(.*)J/$1|/;
-                    $p =~ s/J(.*)F/$1|/;
-                    last if $p eq $q;
-                    $q = $p;
-                }
-
-                if ($p eq '|') # $p is '|' or ''
-                {
-                    $st = $st eq 'O' ? 'I' : 'O';
-                }
-
-                $t->{$nx,$y} = $st;
-                $dots--;
-                last YY if $dots == 0;
-
-                $x = $nx;
-                next XX;
-            }
-
-            $p .= $a;
-            $nx++;
+            $t->{$x,$y} = $st;
+            $dots--;
+            last YY if $dots == 0;
+            next;
         }
 
-        last XX;
+        die "$x,$y $a ne $st" if $a =~ /[OI]/ && $a ne $st;
+
+        next if $a =~ /[OI-]/;
+
+        if ($a =~ /[FL]/)
+        {
+            $have = $a;
+            next;
+        }
+
+        next if "$have$a" =~ /(F7|LJ)/;
+
+        # change side for FJ, L7 and |
+        $st = $st eq 'O' ? 'I' : 'O';
     }
 }
 
