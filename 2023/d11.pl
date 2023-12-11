@@ -4,8 +4,8 @@ use strict;
 use feature qw/state signatures say multidimensional/;
 use File::Slurp;
 use Data::Dumper;
-use List::Util qw/min max first sum product all any uniq head tail reduce pairs zip mesh/;
-use List::MoreUtils qw/firstidx frequency mode slide/;
+use List::Util qw/min max first sum sum0 product all any uniq head tail reduce pairs zip mesh/;
+use List::MoreUtils qw/firstidx frequency mode slide minmax/;
 use POSIX qw/ceil floor/;
 use Algorithm::Combinatorics qw/combinations permutations variations/;
 use Clone qw/clone/;
@@ -44,39 +44,24 @@ for (@f)
     $y++;
 }
 
-my $h = $y;
-my $w = length($f[0]);
-my $maxy = $h - 1;
-my $maxx = $w - 1;
+my ($h, $w) = ($y, length($f[0]));
+my ($maxx, $maxy) = ($w - 1, $h - 1);
 
 for my $stage (1..2)
 {
     my $sum = 0;
-    for my $v (combinations([0..$#galaxies], 2))
+    for my $v (combinations(\@galaxies, 2))
     {
-        my ($gai, $gbi) = @$v;
+        my ($ga, $gb) = @$v;
+        my ($gax, $gay) = @$ga;
+        my ($gbx, $gby) = @$gb;
 
-        my ($gax,$gay) = @{$galaxies[$gai]};
-        my ($gbx,$gby) = @{$galaxies[$gbi]};
+        ($gax, $gbx) = minmax($gax, $gbx);
+        ($gay, $gby) = minmax($gay, $gby);
 
-        ($gax,$gbx) = ($gbx,$gax) if $gax > $gbx;
-        ($gay,$gby) = ($gby,$gay) if $gay > $gby;
-
-        my $i = 0;
-
-        for my $x ($gax+1..$gbx)
-        {
-            $i += exists $occx{$x} ? 1 : $expand{$stage};
-        }
-
-        for my $y ($gay+1..$gby)
-        {
-            $i += exists $occy{$y} ? 1 : $expand{$stage};
-        }
-
-        $sum += $i;
-
-        # print "$gai -> $gbi = $i ($sum)\n";
+        $sum +=
+            sum0(map { exists $occx{$_} ? 1 : $expand{$stage} } ($gax+1..$gbx)) +
+            sum0(map { exists $occy{$_} ? 1 : $expand{$stage} } ($gay+1..$gby));
     }
 
     printf "Stage %d: %s\n", $stage, $sum;
