@@ -11,13 +11,10 @@ use Algorithm::Combinatorics qw/combinations permutations variations combination
 use Clone qw/clone/;
 $; = ',';
 
-no warnings 'recursion';
-
 my @f = read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
 my $stage2 = 0;
-
 
 # naive brute force, valid for stage 1
 sub go($p, $counts)
@@ -29,9 +26,7 @@ sub go($p, $counts)
         return go($a, $counts) + go($b, $counts);
     }
 
-    my @x = split/\.+/,$p;
-    my @y = grep { $_ != 0 } map { length $_ } @x;
-    my $t = join",",@y;
+    my $t = join(",", grep { $_ != 0 } map { length $_ } split(/\.+/,$p));
     return $t eq $counts ? 1 : 0;
 }
 
@@ -39,106 +34,80 @@ my $numofspaces = 0;
 my $numofspaceblocks = 0;
 my $maxlenofspaceblock = 0;
 
-my $pp = '';
+my $pattern = '';
 my @c = ();
-my $p;
 
 my %dp = ();
 
+# every level adds one ### block
 sub go2($usedspaces, $level, $s)
 {
-
-#    my $l = length($pp);
+    # cache key - level (number of ### blocks) + length of string up to now -- f("# #  # ") == f("#  # # ")
     my $dpk = "$level:".length($s);
     return $dp{$dpk} if exists $dp{$dpk};
 
-    # my $q = $p;
-    # $q =~ s/[^\.]//g;
-    # my $nos = length($q);
+
+    if ($level == scalar @c)
+    {
+        $s .= " " x (length($pattern) - length($s));
+        return $s =~ /^$pattern$/ ? 1 : 0;
+    }
+        
+    my $start = $level == 0 ? 0 : 1; # first block can be empty, last as well but we don't add last one here
 
     my $v = 0;
-    if ($level < $numofspaceblocks - 1)
+    for my $i ($start..$maxlenofspaceblock)
     {
-        my $start = ($level == 0 || $level == $numofspaceblocks - 1) ? 0 : 1;
+        last if $usedspaces + $i > $numofspaces;
 
-        for my $i ($start..$maxlenofspaceblock)
-        {
-            last if $usedspaces + $i > $numofspaces;
-            my $t = $s;
-            $t .= " " x $i;
-            if ($level < scalar(@c))
-            {
-                $t .= "#" x $c[$level];
-    #            die;
-            }
-            else
-            {
-                # die;
-            }
-            my $qq = $pp;
-            $qq = substr($qq, 0, length $t) if length($t) < length($qq);
-#            $qq =~ s/(\s*(#+\s+){$level}#+).*/$1/;
-#print "$level|$pp|qq($qq)($t)\n";
-            #$qq = ($pp =~ s/^(.*#).*/$1/r);
-            next unless $t =~ /^$qq/;
+        my $t = 
+            $s . 
+            " " x $i . 
+            "#" x $c[$level];
 
-#            printf "%02d|$usedspaces+$i|$pp|$qq|$t|NOTBAD\n", $level;
-            $v += go2($usedspaces + $i, $level + 1, $t)
-        }
+        my $qq = length($t) < length($pattern) ? substr($pattern, 0, length $t) : $pattern;
 
-        $dp{$dpk} = $v;
-        return $v;
+        next unless $t =~ /^$qq/;
+
+        $v += go2($usedspaces + $i, $level + 1, $t)
     }
 
-$s .= " " x (length($pp) - length($s));
-if ($s =~ /^$pp$/)
+    return $dp{$dpk} = $v;
+}
+
+for my $stage (1..2)
 {
-    printf "%02d|$pp|$s|HIT\n", $level;
-    return 1;
+    my $sum = 0;
+    for (@f)
+    {
+        my ($p,$counts) = split/\s/;
+    
+        if ($stage == 2)
+        {
+            $p = join('?', (($p) x 5));
+            $counts = join(',', (($counts) x 5));
+        }
+    
+        @c = ($counts =~ m/\d+/g);
+    
+        my $l = length($p);
+    
+        my $numofhashesreal = sum(@c);
+        my $numofhashes = () = $p =~ /#/g;
+        my $numofquestm = () = $p =~ /\?/g;
+        my $numofdots = () = $p =~ /\./g;
+    
+        $numofspaces = $numofdots + $numofquestm - ($numofhashesreal - $numofhashes);
+        $numofspaceblocks = (() = $counts =~ s/\D+//g) + 2;
+        $maxlenofspaceblock = $numofspaces - ($numofspaceblocks - 2 - 1);
+    
+        $pattern = $p;
+        $pattern =~ s/\./ /g;
+        $pattern =~ s/\?/./g;
+    
+        %dp = ();
+        $sum += go2(0, 0, '');
+    }
+
+    printf "Stage $stage: %s\n", $sum;
 }
-
-return 0;
-}
-
-for (@f)
-{
-    my ($p0,$counts) = split/\s/;
-
-    $p = $p0;
-
-    $p = join('?', (($p0) x 5));
-    $counts = join(',', (($counts) x 5));
-
-    @c = ($counts =~ m/\d+/g);
-
-    my $l = length($p);
-
-    my $numofhashesreal = sum(@c);
-    my $numofhashes = () = $p =~ /#/g;
-    my $numofquestm = () = $p =~ /\?/g;
-    my $numofdots = () = $p =~ /\./g;
-
-    $numofspaces = $numofdots + $numofquestm - ($numofhashesreal - $numofhashes);
-    print "numbers: #r $numofhashesreal # $numofhashes ? $numofquestm . $numofdots _ $numofspaces\n";
-    $numofspaceblocks = length(",$counts," =~ s/\d+//gr);
-    $maxlenofspaceblock = $numofspaces - ($numofspaceblocks - 2 - 1);
-
-#    my @cc = (0..$maxlenofspaceblock);
-#    my @d = variations_with_repetition(\@cc, $numofspaceblocks);
-
-    $pp = $p;
-    $pp =~ s/\./ /g;
-    $pp =~ s/\?/./g;
-#    $pp =~ s/\.+$//g;
-
-    print "$p|$pp|$counts ($l,$numofspaces,$numofspaceblocks,$maxlenofspaceblock)\n";
-    my $v = go2(0, 0, '');
-    %dp = ();
-#    my $v = go3(0,0,0);
-#print Dumper \%dp;
-    print "$v = $p $counts\n\n\n";
-    $stage1 += $v;
-}
-
-printf "Stage 1 = %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
