@@ -17,9 +17,6 @@ push(@f, ''); # add empty line at the end
 my $stage1 = 0;
 my $stage2 = 0;
 
-my $x = 0;
-my $y = 0;
-
 my @rows;
 my @cols;
 
@@ -48,7 +45,6 @@ for (@f)
             $mul *= 100;
         }
 
-        $y = 0;
         @rows = ();
         @cols = ();
 
@@ -56,16 +52,13 @@ for (@f)
         next;
     }
 
-    $x = 0;
-    my $r = '';
+    my $x = 0;
     for my $v (split//)
     {
-        $r .= $v;
         $cols[$x++] .= $v;
     }
-    push(@rows, $r);
+    push(@rows, $_);
 
-    $y++;
     $i++;
 }
 
