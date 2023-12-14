@@ -28,12 +28,14 @@ for (@f)
     for my $v (split//)
     {
         $t->{$x,$y} = $v;
-
-
         $x++;
     }
     $y++;
 }
+
+# N W S E
+my @ddx = qw/0 -1 0 1/;
+my @ddy = qw/-1 0 1 0/;
 
 my ($h, $w) = ($y, length($f[0]));
 my ($maxx, $maxy) = ($w - 1, $h - 1);
@@ -42,92 +44,42 @@ my %loads;
 for my $c (0..$max)
 {
     # north
-    my $moved = 0;
-    while (1)
+
+    for my $dir (0..3)
     {
-        for my $y (1..$maxy)
+        my $dx = $ddx[$dir];
+        my $dy = $ddy[$dir];
+
+        my $sx = $dx == -1 ? 1 : 0;
+        my $sy = $dy == -1 ? 1 : 0;
+
+        my $ex = $dx == 1 ? $maxx - 1 : $maxx;
+        my $ey = $dy == 1 ? $maxy - 1 : $maxy;
+
+        my $moved = 0;
+        while (1)
         {
-            for my $x (0..$maxx)
+            for my $y ($sy..$ey)
             {
-                if ($t->{$x,$y} eq 'O' && $t->{$x,$y-1} eq '.')
+                for my $x ($sx..$ex)
                 {
-                    $t->{$x,$y} = '.';
-                    $t->{$x,$y-1} = 'O';
-                    $moved = 1;
+                    if ($t->{$x,$y} eq 'O' && $t->{$x+$dx,$y+$dy} eq '.')
+                    {
+                        $t->{$x,$y} = '.';
+                        $t->{$x+$dx,$y+$dy} = 'O';
+                        $moved = 1;
+                    }
                 }
             }
+
+            last unless $moved;
+            $moved = 0;
         }
 
-        last unless $moved;
-        $moved = 0;
-    }
-
-    if ($stage1 == 0)
-    {
-        $stage1 = sum(map { $maxy - (split/$;/)[1] + 1 } grep { $t->{$_} eq 'O' } keys %$t);
-    }
-
-    # west
-    $moved = 0;
-    while (1)
-    {
-        for my $y (0..$maxy)
+        if ($stage1 == 0)
         {
-            for my $x (1..$maxx)
-            {
-                if ($t->{$x,$y} eq 'O' && $t->{$x-1,$y} eq '.')
-                {
-                    $t->{$x,$y} = '.';
-                    $t->{$x-1,$y} = 'O';
-                    $moved = 1;
-                }
-            }
+            $stage1 = sum(map { $maxy - (split/$;/)[1] + 1 } grep { $t->{$_} eq 'O' } keys %$t);
         }
-
-        last unless $moved;
-        $moved = 0;
-    }
-
-    # south
-    $moved = 0;
-    while (1)
-    {
-        for my $y (0..$maxy-1)
-        {
-            for my $x (0..$maxx)
-            {
-                if ($t->{$x,$y} eq 'O' && $t->{$x,$y+1} eq '.')
-                {
-                    $t->{$x,$y} = '.';
-                    $t->{$x,$y+1} = 'O';
-                    $moved = 1;
-                }
-            }
-        }
-
-        last unless $moved;
-        $moved = 0;
-    }
-
-    # east
-    $moved = 0;
-    while (1)
-    {
-        for my $y (0..$maxy)
-        {
-            for my $x (0..$maxx-1)
-            {
-                if ($t->{$x,$y} eq 'O' && $t->{$x+1,$y} eq '.')
-                {
-                    $t->{$x,$y} = '.';
-                    $t->{$x+1,$y} = 'O';
-                    $moved = 1;
-                }
-            }
-        }
-
-        last unless $moved;
-        $moved = 0;
     }
 
     my $h = '';
@@ -141,7 +93,6 @@ for my $c (0..$max)
         }
     }
 
-#    print "$c $load $h \n";
     if (exists $v{$h} )
     {
         my $off = $v{$h};
