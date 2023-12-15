@@ -19,66 +19,42 @@ my $stage2 = 0;
 my %h;
 my %focal;
 
+sub hash($v) 
+{ 
+    return reduce { (($a + $b) * 17) % 256} (0, map {ord} split(//, $v)) 
+}
+
 my @f = split(/,/, $s);
+$stage1 = sum( map { hash($_) } @f );
+
 for (@f)
 {
-    my $x = 0;
-    for my $c (split//)
-    {
-        $x += ord($c);
-        $x *= 17;
-        $x %= 256;
-    }
-    $stage1 += $x;
-
     my ($l,$op,$foc) = m/(.*)([=-])(.*)?/;
 
-    $x = 0;
-    for my $c (split//,$l)
-    {
-        $x += ord($c);
-        $x *= 17;
-        $x %= 256;
-    }
-
-    my $p = undef;
-    $p = $h{$x} if exists $h{$x};
+    my $x = hash($l);
+    
+    my $p = $h{$x}; 
 
     if ($op eq '-')
     {
         next unless defined $p;
 
-        for my $i (0..$#$p)
-        {
-            if ($p->[$i] eq $l)
-            {
-                splice(@$p, $i, 1);
-                last;
-            }
-        }
+        my $i = firstidx { $_ eq $l } @$p;
+        splice(@$p, $i, 1) if $i >= 0;
     }
     else # =
     {
-        my $changed = 0;
-        if (defined $p)
+        my $i = firstidx { $_ eq $l } @$p;
+        if ($i >= 0)
         {
-            for my $i (0..$#$p)
-            {
-                if ($p->[$i] eq $l)
-                {
-                    $p->[$i] = $l;
-                    $focal{$x,$l} = $foc;
-                    $changed = 1;
-                    last;
-                }
-            }
+            $p->[$i] = $l;
         }
-
-        unless ($changed)
+        else
         {
             push(@$p, $l);
-            $focal{$x,$l} = $foc;
         }
+            
+        $focal{$x,$l} = $foc;
     }
 
     $h{$x} = $p;
@@ -91,7 +67,7 @@ for my $x (0..255)
     my $p = $h{$x};
     next unless scalar @$p;
 
-    for my $i (0..$#$p)
+    for my $i (indexes { defined } @$p)
     {
         $stage2 += (1+$x) * (1+$i) * $focal{$x,$p->[$i]};
     }
