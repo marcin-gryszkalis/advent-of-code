@@ -19,9 +19,9 @@ my $stage2 = 0;
 my %h;
 my %focal;
 
-sub hash($v) 
-{ 
-    return reduce { (($a + $b) * 17) % 256} (0, map {ord} split(//, $v)) 
+sub hash($v)
+{
+    return reduce { (($a + $b) * 17) % 256} (0, map {ord} split(//, $v))
 }
 
 my @f = split(/,/, $s);
@@ -32,8 +32,8 @@ for (@f)
     my ($l,$op,$foc) = m/(.*)([=-])(.*)?/;
 
     my $x = hash($l);
-    
-    my $p = $h{$x}; 
+
+    my $p = $h{$x};
 
     if ($op eq '-')
     {
@@ -53,7 +53,7 @@ for (@f)
         {
             push(@$p, $l);
         }
-            
+
         $focal{$x,$l} = $foc;
     }
 

@@ -60,8 +60,7 @@ for my $ss (@sq)
     {
         my ($x,$y,$dx,$dy) = @$start;
 
-        next if $x < 0 || $x > $maxx;
-        next if $y < 0 || $y > $maxy;
+        next if $x < 0 || $x > $maxx || $y < 0 || $y > $maxy;
 
         next if exists $v->{$x,$y,$dx,$dy};
         $v->{$x,$y,$dx,$dy} = 1;
