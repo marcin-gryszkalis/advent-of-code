@@ -39,12 +39,9 @@ for (@f)
 my ($h, $w) = ($y, length($f[0]));
 my ($maxx, $maxy) = ($w - 1, $h - 1);
 
-$x = 0;
-$y = 0;
-
 sub proceed($stage)
 {
-    $q->add([0,0,-100,0,0], 0); # x, y, direction index, how long straight in this dir, distance (same as key)
+    $q->add([0,0,-1,0,0], 0); # x, y, direction index (0..3), how long straight in this dir (1..inf), distance (same as key)
 
     my $d;
     my $result = 1_000_000_000;
@@ -54,18 +51,17 @@ sub proceed($stage)
         my ($x,$y,$dir,$straight,$distance) = @$a;
 
         next if exists $d->{$x,$y,$dir,$straight};
-
         $d->{$x,$y,$dir,$straight} = $distance;
 
         if ($x == $maxx && $y == $maxy)
         {
             next if $stage == 2 && $straight < 4; # it needs to move a minimum of four blocks in that direction before it can turn (**or even before it can stop at the end**)
-            $result = min($result,$distance)
+            $result = min($result, $distance)
         }
 
         for my $ndir (0..3)
         {
-            next if abs($dir - $ndir) == 2; # opposite directions
+            next if $dir >= 0 && abs($dir - $ndir) == 2; # opposite directions
 
             my $nstraight = $ndir != $dir ? 1 : $straight + 1;
 
@@ -73,7 +69,7 @@ sub proceed($stage)
             {
                 next if $nstraight > 3;
             }
-            else
+            else # stage 2
             {
                 next if $nstraight > 10;
                 next if $ndir != $dir && $straight > 0 && $straight < 4;
@@ -88,13 +84,9 @@ sub proceed($stage)
 
             $q->add([$nx,$ny,$ndir,$nstraight,$ndistance], $ndistance);
         }
-
     }
 
     printf "Stage $stage: %s\n", $result;
 }
 
 proceed($_) for (1..2)
-# 1080 too low
-# 1152 too hi
-# 1033 invalid
