@@ -34,8 +34,8 @@ for my $stage (1..2)
     # I or E: internal (3 sides inside) / external (3 sides outside) vertex
     my $intext = {};
 
-    $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
-    my $pd = $stage == 1 ? $mm{$1} : $4;
+    $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/; 
+    my $pd = $stage == 1 ? $mm{$1} : $4; # direction of last
 
     for (@f)
     {
@@ -46,7 +46,7 @@ for my $stage (1..2)
 
         # assume we have internal on the right (i.e. vertices are clockwise):
         # turn right - external, turn left - internal
-        $intext->{$x,$y} = "$pd$d" =~ /(01|12|23|30)/ ? 'E' : 'I'; #($d - ($pd+4) %4 == 1) ? 'E' : 'I';
+        $intext->{$x,$y} = ($d - $pd + 4) % 4 == 1 ? 'E' : 'I';
 
         $x += $m->{$d}->[0] * $l;
         $y += $m->{$d}->[1] * $l;
@@ -79,8 +79,8 @@ for my $stage (1..2)
         {
             for my $x (sort { $a <=> $b } @{$t->{$y}})
             {
-                delete $nstate{$x} if exists $state{$x} && $intext->{$x,$y} eq 'I';
-                $nstate{$x} = 1 if !exists$state{$x} && $intext->{$x,$y} eq 'E';
+                delete $nstate{$x} if exists $state{$x} && $intext->{$x,$y} eq 'I'; # remove internal before calc
+                $nstate{$x} = 1 if !exists$state{$x} && $intext->{$x,$y} eq 'E';    # add external before calc
             }
         }
 
@@ -91,8 +91,8 @@ for my $stage (1..2)
         {
             for my $x (sort { $a <=> $b } @{$t->{$y}})
             {
-                delete $nstate{$x} if exists $state{$x} && $intext->{$x,$y} eq 'E';
-                $nstate{$x} = 1 if !exists$state{$x} && $intext->{$x,$y} eq 'I';
+                delete $nstate{$x} if exists $state{$x} && $intext->{$x,$y} eq 'E'; # remove external after calc
+                $nstate{$x} = 1 if !exists$state{$x} && $intext->{$x,$y} eq 'I';    # add internal after calc
             }
         }
 
