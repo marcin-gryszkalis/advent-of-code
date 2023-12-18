@@ -35,6 +35,7 @@ for my $stage (1..2)
     my ($minx,$maxx) = (0,0);
     my ($miny,$maxy) = (0,0);
 
+    # I or E: internal (3 sides inside) / external (3 sides outside) vertex
     my $intext = {};
 
     $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
@@ -47,17 +48,9 @@ for my $stage (1..2)
         my $d = $stage == 1 ? $mm{$d1} : $d2;
         my $l = $stage == 1 ? $l1 : hex($h5);
 
-        # assume we have internal on the right
-        if ("$pd$d" =~ /(01|12|23|30)/) # turn right
-        {
-            $intext->{$x,$y} = 'E'
-        }
-        else
-        {
-            $intext->{$x,$y} = 'I'
-        }
-
-        #print "$x,$y $pd$dd $intext->{$x,$y}\n";
+        # assume we have internal on the right (below we verify)
+        # turn right - external, turn left - internal
+        $intext->{$x,$y} = $d - ($pd+4) %4 == 1 ? 'E' : 'I';
 
         $x += $m->{$d}->[0] * $l;
         $y += $m->{$d}->[1] * $l;
@@ -69,9 +62,12 @@ for my $stage (1..2)
 
         push(@{$t->{$y}}, $x);
 
-
         $pd = $d;
     }
+
+    $y = first { $a <=> $b } keys %$t;
+    $x = first { $a <=> $b } @{$t->{$y}};
+    die "assumption that interior is on the right side was wrong :)" if $intext->{$x,$y} eq 'E';
 
     my %state = ();
 
