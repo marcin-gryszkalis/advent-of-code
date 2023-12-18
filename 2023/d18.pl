@@ -22,7 +22,6 @@ my $m = {
 
 my %mm = qw/R 0 D 1 L 2 U 3/;
 
-
 for my $stage (1..2)
 {
     my $total = 0;
@@ -34,7 +33,7 @@ for my $stage (1..2)
     # I or E: internal (3 sides inside) / external (3 sides outside) vertex
     my $intext = {};
 
-    $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/; 
+    $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
     my $pd = $stage == 1 ? $mm{$1} : $4; # direction of last
 
     for (@f)
@@ -75,7 +74,7 @@ for my $stage (1..2)
 
         my %nstate = %state;
 
-        if (exists $t->{$y}) 
+        if (exists $t->{$y})
         {
             for my $x (sort { $a <=> $b } @{$t->{$y}})
             {
