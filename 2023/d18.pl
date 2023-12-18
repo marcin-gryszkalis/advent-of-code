@@ -13,12 +13,8 @@ $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
-
 my $x = 0;
 my $y = 0;
-my $t;
 
 my $m = {
 '0' => [1,0],
@@ -30,135 +26,164 @@ my $m = {
 my %mm = qw/R 0 D 1 L 2 U 3/;
 
 
-my ($minx,$maxx) = ($x,$x);
-my ($miny,$maxy) = ($y,$y);
-
-my $intext;
-
-$f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
-my $pd = $mm{$1};
-
-for (@f)
+for my $stage (1..2)
 {
-    my ($d,$l,$h5,$dd) = m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
+    my $total = 0;
 
-    my $l2 = hex($h5);
+    my $t = {};
 
-    # stage1
-    $dd = $mm{$d};
-    $l2 = $l;
+    my ($minx,$maxx) = (0,0);
+    my ($miny,$maxy) = (0,0);
 
-    # assume we have internal on the right
-    if ("$pd$dd" =~ /(01|12|23|30)/) # turn right
+    my $intext = {};
+
+    $f[-1] =~ m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
+    my $pd = $stage == 1 ? $mm{$1} : $4;
+
+    for (@f)
     {
-        $intext->{$x,$y} = 'E'
+        my ($d1,$l1,$h5,$d2) = m/(.)\s+(\d+)\s+\(#(.*)(.)\)/;
+
+        my $d = $stage == 1 ? $mm{$d1} : $d2;
+        my $l = $stage == 1 ? $l1 : hex($h5);
+
+        # assume we have internal on the right
+        if ("$pd$d" =~ /(01|12|23|30)/) # turn right
+        {
+            $intext->{$x,$y} = 'E'
+        }
+        else
+        {
+            $intext->{$x,$y} = 'I'
+        }
+
+        #print "$x,$y $pd$dd $intext->{$x,$y}\n";
+
+        $x += $m->{$d}->[0] * $l;
+        $y += $m->{$d}->[1] * $l;
+
+        $minx = min($minx,$x);
+        $maxx = max($maxx,$x);
+        $miny = min($miny,$y);
+        $maxy = max($maxy,$y);
+
+        push(@{$t->{$y}}, $x);
+
+
+        $pd = $d;
     }
-    else
+
+    my %state = ();
+
+    my $py = 0;
+    for my $y (sort { $a <=> $b } keys %$t)
     {
-        $intext->{$x,$y} = 'I'
+        if (%state)
+        {
+            my $v = 0;
+            my $px = 0;
+            my $i = 0;
+            for my $x (sort { $a <=> $b } keys %state)
+            {
+                if ($i%2 == 0) # Left
+                {
+
+                }
+                else # Right
+                {
+                    $v += ($x - $px + 1);
+
+                    print "$y: $px - $x = $v\n";
+                }
+                $i++;
+                $px = $x;
+            }
+
+            printf "multiply by %d\n", ($y - $py - 1);
+            $total += $v * ($y - $py - 1); # lines between
+        }
+        $py = $y;
+
+    #    print Dumper \%state;
+        my %nstate = %state;
+
+        if (exists $t->{$y})
+        {
+            for my $x (sort { $a <=> $b } @{$t->{$y}})
+            {
+                if (exists $state{$x}) # to be removed
+                {
+                    if ($intext->{$x,$y} eq 'I') # internal
+                    {
+                        delete $nstate{$x};
+                    }
+                    else # external
+                    {
+                    }
+                }
+                else # new
+                {
+                    if ($intext->{$x,$y} eq 'I') # internal
+                    {
+                    }
+                    else # external
+                    {
+                        $nstate{$x} = 1;
+
+                    }
+                }
+            }
+        }
+
+        my $v = 0;
+        my $px = 0;
+        my $i = 0;
+        for my $x (sort { $a <=> $b } keys %nstate)
+        {
+            if ($i%2 == 0) # Left
+            {
+
+            }
+            else # Right
+            {
+                $v += ($x - $px + 1);
+
+                print "$y: $px - $x = $v\n";# if ($y % 100000 == 0);
+            }
+            $i++;
+            $px = $x;
+        }
+        $total += $v;
+
+        if (exists $t->{$y})
+        {
+            for my $x (sort { $a <=> $b } @{$t->{$y}})
+            {
+                if (exists $state{$x}) # to be removed
+                {
+                    if ($intext->{$x,$y} eq 'I') # internal
+                    {
+                    }
+                    else # external
+                    {
+                        delete $nstate{$x};
+                    }
+                }
+                else # new
+                {
+                    if ($intext->{$x,$y} eq 'I') # internal
+                    {
+                        $nstate{$x} = 1;
+                    }
+                    else # external
+                    {
+                    }
+                }
+            }
+        }
+
+        %state = %nstate;
     }
 
-    #print "$x,$y $pd$dd $intext->{$x,$y}\n";
-
-    $x += $m->{$dd}->[0] * $l2;
-    $y += $m->{$dd}->[1] * $l2;
-
-    $minx = min($minx,$x);
-    $maxx = max($maxx,$x);
-    $miny = min($miny,$y);
-    $maxy = max($maxy,$y);
-
-    push(@{$t->{$y}}, $x);
-
-
-    $pd = $dd;
+    printf "Stage $stage: %s\n", $total;
 }
-
-my $vv;
-my %state;
-
-for my $y ($miny..$maxy)#sort { $a <=> $b } keys %$t)
-{
-#    print Dumper \%state;
-    my %nstate = %state;
-
-    if (exists $t->{$y})
-    {
-        for my $x (sort { $a <=> $b } @{$t->{$y}})
-        {
-            if (exists $state{$x}) # to be removed
-            {
-                if ($intext->{$x,$y} eq 'I') # internal
-                {
-                    delete $nstate{$x};
-                }
-                else # external
-                {
-                }
-            }
-            else # new
-            {
-                if ($intext->{$x,$y} eq 'I') # internal
-                {
-                }
-                else # external
-                {
-                    $nstate{$x} = 1;
-
-                }
-            }
-        }
-    }
-
-    my $v = 0;
-    my $px = 0;
-    my $i = 0;
-    for my $x (sort { $a <=> $b } keys %nstate)
-    {
-        if ($i%2 == 0) # Left
-        {
-
-        }
-        else # Right
-        {
-            $v += ($x - $px + 1);
-
-            print "$y: $px - $x\n" if ($y % 100000 == 0);
-        }
-        $i++;
-        $px = $x;
-    }
-    $stage1 += $v;
-
-    if (exists $t->{$y})
-    {
-        for my $x (sort { $a <=> $b } @{$t->{$y}})
-        {
-            if (exists $state{$x}) # to be removed
-            {
-                if ($intext->{$x,$y} eq 'I') # internal
-                {
-                }
-                else # external
-                {
-                    delete $nstate{$x};
-                }
-            }
-            else # new
-            {
-                if ($intext->{$x,$y} eq 'I') # internal
-                {
-                    $nstate{$x} = 1;
-                }
-                else # external
-                {
-                }
-            }
-        }
-    }
-
-    %state = %nstate;
-}
-
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
