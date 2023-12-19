@@ -11,7 +11,7 @@ use Algorithm::Combinatorics qw/combinations permutations variations/;
 use Clone qw/clone/;
 $; = ',';
 
-#use bigint;
+my %mm = qw/x 0 m 1 a 2 s 3/;
 
 my @f = read_file(\*STDIN, chomp => 1);
 
@@ -33,102 +33,43 @@ for (@f)
     {
         my $s = $1;
         my @o = $s =~ m/(\d+)/g;
-        my %oo;
-        $oo{x} = $o[0];
-        $oo{m} = $o[1];
-        $oo{a} = $o[2];
-        $oo{s} = $o[3];
-
-        push(@e, \%oo);
+        push(@e, \@o);
     }
 }
 
-#print Dumper $rules;
-#print Dumper \@e;
-#exit;
+push(@{$rules->{R}}, 'R');
+push(@{$rules->{A}}, 'A');
 
 E: for my $x (@e)
 {
     my $w = 'in';
     W: while (1)
     {
-        my $status = undef;
         R: for my $r (@{$rules->{$w}})
         {
-            print "$x->{x},$x->{m},$x->{a},$x->{s} $w $r\n";
             if ($r =~ /(\w)([<>])(\d+):(\w+)/)
             {
-                my $p = $1;
-                my $op = $2;
-                my $v = $3;
-                my $dest = $4;
-
-                if ($op eq '<')
+                my ($p,$op,$v,$dest) = @{^CAPTURE};
+                if ($op eq '<' && $x->[$mm{$p}] < $v || $op eq '>' && $x->[$mm{$p}] > $v)
                 {
-                    if ($x->{$p} < $v)
-                    {
-                        if ($dest eq 'A')
-                        {
-                            $stage1 += sum(values(%$x));
-                            next E;
-                        }
-                        elsif ($dest eq 'R')
-                        {
-                            next E;
-                        }
-                        else
-                        {
-                            $w = $dest;
-                            next W;
-                        }
-                    }
-                    else
-                    {
-                        next R;
-                    }
-                }
-                else # >
-                {
-                    # die $v unless $v !~ /\d+/;
-                    # die "$p $x->{$p} $v" unless $x->{$p} !~ /\d+/;
-                    if ($x->{$p} > $v)
-                    {
-                        if ($dest eq 'A')
-                        {
-                            $stage1 += sum(values(%$x));
-                            next E;
-                        }
-                        elsif ($dest eq 'R')
-                        {
-                            next E;
-                        }
-                        else
-                        {
-                            $w = $dest;
-                            next W;
-                        }
-                    }
-                    else
-                    {
-                        next R;
-                    }
+                    $w = $dest;
+                    next W;
                 }
             }
             else
             {
-                my $dest = $r;
-                if ($dest eq 'A')
+                if ($r eq 'A')
                 {
-                    $stage1 += sum(values(%$x));
+                    $stage1 += sum(@$x);
                     next E;
                 }
-                elsif ($dest eq 'R')
+                elsif ($r eq 'R')
                 {
                     next E;
                 }
                 else
                 {
-                    $w = $dest;
+                    $w = $r;
                     next W;
                 }
             }
@@ -136,48 +77,24 @@ E: for my $x (@e)
     }
 }
 
-say $stage1;
-
-my $stage2x = 0;
-my $total = 0;
-my $ranges;
 my @q;
 my @qw;
-my %mm = qw/x 0 m 1 a 2 s 3/;
 
 push(@q, [[1,4000],[1,4000],[1,4000],[1,4000]]);
 push(@qw, 'in');
 
-push(@{$rules->{R}}, 'R');
-push(@{$rules->{A}}, 'A');
-
 Q: while (my $x = pop @q)
 {
-                    $total =
-                    ($x->[0]->[1] - $x->[0]->[0] + 1) *
-                    ($x->[1]->[1] - $x->[1]->[0] + 1) *
-                    ($x->[2]->[1] - $x->[2]->[0] + 1) *
-                    ($x->[3]->[1] - $x->[3]->[0] + 1) if $total == 0;
-
     my $w = pop @qw;
-
-    print $w, Dumper $x;
 
     R: for my $r (@{$rules->{$w}})
     {
-#            print "$x->{x},$x->{m},$x->{a},$x->{s} $w $r\n";
-        print "$w $r\n";
         if ($r =~ /(\w)([<>])(\d+):(\w+)/)
         {
-            my $p = $1;
-            my $op = $2;
-            my $v = $3;
-            my $dest = $4;
-            print "$w $r :: $x->[$mm{$p}]->[0] $x->[$mm{$p}]->[1]\n";
+            my ($p,$op,$v,$dest) = @{^CAPTURE};
 
             if ($x->[$mm{$p}]->[0] <= $v && $x->[$mm{$p}]->[1] >= $v) # split
             {
-                say "SPLIT";
                 my $x1 = clone $x;
                 my $x2 = clone $x;
 
@@ -189,8 +106,6 @@ Q: while (my $x = pop @q)
                     push(@qw, $dest);
 
                     $x = $x2;
-                    next R;
-
                 }
                 else # >
                 {
@@ -201,16 +116,15 @@ Q: while (my $x = pop @q)
                     push(@qw, $dest);
 
                     $x = $x1;
-                    next R;
                 }
             }
             elsif ($x->[$mm{$p}]->[0] > $v && $op eq '<' || $x->[$mm{$p}]->[1] < $v && $op eq '>') # no common part of ranges
             {
-                next R;
+                next Q;
             }
             elsif ($x->[$mm{$p}]->[0] > $v && $op eq '>' || $x->[$mm{$p}]->[1] < $v && $op eq '<') # whole range inside
             {
-                push(@q, clone $x);
+                push(@q, $x);
                 push(@qw, $dest);
                 next Q;
             }
@@ -218,42 +132,25 @@ Q: while (my $x = pop @q)
         else # simple rule
         {
             my $dest = $r;
-print "SIMPLE($dest)\n";
             if ($dest eq 'A')
             {
-
-                $stage2 +=
-                    ($x->[0]->[1] - $x->[0]->[0] + 1) *
-                    ($x->[1]->[1] - $x->[1]->[0] + 1) *
-                    ($x->[2]->[1] - $x->[2]->[0] + 1) *
-                    ($x->[3]->[1] - $x->[3]->[0] + 1);
-
-                next Q;
+                $stage2 += product map { $x->[$_]->[1] - $x->[$_]->[0] + 1 } (0..3);
             }
             elsif ($dest eq 'R')
             {
-                $stage2x +=
-                    ($x->[0]->[1] - $x->[0]->[0] + 1) *
-                    ($x->[1]->[1] - $x->[1]->[0] + 1) *
-                    ($x->[2]->[1] - $x->[2]->[0] + 1) *
-                    ($x->[3]->[1] - $x->[3]->[0] + 1);
 
-                next Q;
             }
             else
             {
-                push(@q, clone $x);
+                push(@q, $x);
                 push(@qw, $dest);
-                next Q;
             }
-
+            next Q;
         }
     }
 
     die;
 }
 
-say $total;
-say $stage2;
-say $stage2x;
-say $stage2 + $stage2x;
+printf "Stage 1: %s\n", $stage1;
+printf "Stage 2: %s\n", $stage2;
