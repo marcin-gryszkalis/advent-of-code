@@ -9,15 +9,13 @@ use List::MoreUtils qw/firstidx frequency mode slide minmax/;
 use POSIX qw/ceil floor/;
 use Algorithm::Combinatorics qw/combinations permutations variations/;
 use Clone qw/clone/;
+use Math::Prime::Util qw/lcm/;
 $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
 my $stage2 = 0;
-
-my @tr;
-my @tr2;
 
 my $t;
 for (@f)
@@ -27,86 +25,63 @@ for (@f)
 
     $t->{$n}->{type} = $type;
     $t->{$n}->{dst} = \@dst;
+    $t->{$n}->{dsth} = {map { $_ => 1 } @dst};
     $t->{$n}->{st} = 0; # for flipflops
-
-    for my $d (@{dst}) # for conj
-    {
-        next if $d eq 'rx';
-        $t->{$d}->{mem}->{$n} = 0;
-    }
-
-    push(@tr, $n) if $type eq '&';
-    push(@tr2, $n) if $type eq '%';
 }
 
-my $high = 0;
-my $low = 0;
-my %mm = qw/0 low 1 high/;
-
-my %ps;
-for my $trx (@tr) { $ps{$trx} = '' }
-for my $trx (@tr2) { $ps{$trx} = '' }
-
-@tr = ();
-push(@tr,'kj');
-for my $i (1..10000000000000000) # 1000
+for my $node (keys %$t)
 {
+    for my $d (@{$t->{$node}->{dst}}) # for conj
+    {
+        next unless exists $t->{$d}; # outputs
+        $t->{$d}->{mem}->{$node} = 0;
+    }
+}
+
+# we'll trace those with many inputs
+my $neo; # the one who has many inputs and they are all &
+for my $node (keys %$t)
+{
+    next unless $t->{$node}->{type} eq '&';
+    next unless scalar(keys %{$t->{$node}->{mem}}) > 1;
+    next if scalar(grep { $t->{$_}->{type} ne '&' } keys %{$t->{$node}->{mem}}) > 0;
+    $neo = $node;
+    last;
+}
+
+my %tr = map { $_ => 1} grep { defined $neo && exists $t->{$_}->{dsth}->{$neo} } keys %$t;
+for my $node (keys %$t)
+{
+    next unless $t->{$node}->{type} eq '&' ;
+    next unless scalar(keys %{$t->{$node}->{mem}}) > 1;
+    next if scalar(grep { $t->{$_}->{type} ne '&' } keys %{$t->{$node}->{mem}}) > 0;
+    $neo = $node;
+    last;
+}
+
+my @lowhigh = (0,0);
+my %cycle;
+
+my $i = 0;
+L: while (1)
+{
+    $i++;
     if ($i == 1001)
     {
-        say $low;
-        say $high;
-        say $high * $low;
-        $stage1 = $high * $low;
-
+        printf "Stage 1: %d * %d = %d\n", $lowhigh[0], $lowhigh[1], product(@lowhigh);
+        exit if scalar(keys %tr) == 0;
     }
+
     my @q = ();
-
-    for my $trx (@tr)
-    {
-        my $ss = join(",", values(%{$t->{$trx}->{mem}}));
-        if ($ss ne $ps{$trx})
-        {
-            printf "$i: $trx=%s\n", $ss;
-            $ps{$trx} = $ss;
-        }
-    }
-
-    # for my $trx (@tr2)
-    # {
-    #     my $ss = $t->{kj}->{st};
-    #     if ($ss ne $ps{$trx})
-    #     {
-    #         printf "$i: $trx=%s\n", $ss;
-    #         $ps{$trx} = $ss;
-    #     }
-    # }
 
     push(@q, [0, 'broadcaster', 'button']);
     while (my $sig = shift(@q))
     {
         my ($p,$n,$src) = @$sig;
-        #print "$i: $src -$mm{$p}-> $n\n";
-        if ($p == 0)
-        {
-            $low++;
-        }
-        else
-        {
-            $high++;
-        }
+        $lowhigh[$p]++;
 
-            if ($n eq 'rx' && $p == 0)
-            {
-                $stage2 = $i;
-                say $i;
-                exit;
-            }
-
-        unless (exists $t->{$n})
-        {
-#            print "empty($n,$p)\n";
-            next;
-        }
+        next unless exists $t->{$n};
+        next unless exists $t->{$n}->{type};
 
         my $m = $t->{$n};
         if ($m->{type} eq '')
@@ -120,32 +95,18 @@ for my $i (1..10000000000000000) # 1000
         {
             if ($p == 0)
             {
-                my $state = 1 - $m->{st};
-                if ($state)
+                $t->{$n}->{st} = 1 - $m->{st};
+                for my $d (@{$m->{dst}})
                 {
-                    for my $d (@{$m->{dst}})
-                    {
-                        push(@q, [1, $d, $n]);
-                    }
-
+                    push(@q, [$t->{$n}->{st}, $d, $n]);
                 }
-                else
-                {
-                    for my $d (@{$m->{dst}})
-                    {
-                        push(@q, [0, $d, $n]);
-                    }
-                }
-                $t->{$n}->{st} = $state;
             }
         }
         elsif ($m->{type} eq '&')
         {
             $t->{$n}->{mem}->{$src} = $p;
-            if (sum(values %{$t->{$n}->{mem}}) == scalar(values %{$t->{$n}->{mem}}))
+            if (all { $_ == 1 } values %{$t->{$n}->{mem}})
             {
-                #print "$i: LOW $n\n" if $n !~ /(ln|vn|zx|dr|qs|pr|jm|jv)/;
-
                 for my $d (@{$m->{dst}})
                 {
                     push(@q, [0, $d, $n]);
@@ -153,20 +114,27 @@ for my $i (1..10000000000000000) # 1000
             }
             else
             {
-                if ($n =~ /(ln|vn|zx|dr)/)
-                {
-                    print "$i: HIGH $n\n" ;
-
-                }
-
                 for my $d (@{$m->{dst}})
                 {
                     push(@q, [1, $d, $n]);
                 }
+
+                if (exists $tr{$n})
+                {
+                    $cycle{$n} = $i unless exists $cycle{$n};
+                    if (scalar(%tr) == scalar(%cycle))
+                    {
+                        my @cycled = grep { exists $cycle{$_} && $cycle{$_} > 0 } keys %tr;
+                        printf "Stage 2: LCM(%s) = LCM(%s) = %d\n",
+                            join(", ", @cycled),
+                            join(", ", map { $cycle{$_} } @cycled),
+                            lcm(map { $cycle{$_} } @cycled);
+                        last L;
+                    }
+                }
+
             }
         }
 
     }
 }
-printf "Stage 1: %s\n", $stage1;
-printf "Stage 2: %s\n", $stage2;
