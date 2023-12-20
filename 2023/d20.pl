@@ -26,19 +26,19 @@ for (@f)
     $t->{$n}->{type} = $type;
     $t->{$n}->{dst} = \@dst;
     $t->{$n}->{dsth} = {map { $_ => 1 } @dst};
-    $t->{$n}->{st} = 0; # for flipflops
+    $t->{$n}->{st} = 0; # state for flipflops
 }
 
+# memory for conj nodes
 for my $node (keys %$t)
 {
-    for my $d (@{$t->{$node}->{dst}}) # for conj
+    for my $d (@{$t->{$node}->{dst}})
     {
         next unless exists $t->{$d}; # outputs
         $t->{$d}->{mem}->{$node} = 0;
     }
 }
 
-# we'll trace those with many inputs
 my $neo; # the one who has many inputs and they are all &
 for my $node (keys %$t)
 {
@@ -49,15 +49,8 @@ for my $node (keys %$t)
     last;
 }
 
+# we'll trace those with many inputs
 my %tr = map { $_ => 1} grep { defined $neo && exists $t->{$_}->{dsth}->{$neo} } keys %$t;
-for my $node (keys %$t)
-{
-    next unless $t->{$node}->{type} eq '&' ;
-    next unless scalar(keys %{$t->{$node}->{mem}}) > 1;
-    next if scalar(grep { $t->{$_}->{type} ne '&' } keys %{$t->{$node}->{mem}}) > 0;
-    $neo = $node;
-    last;
-}
 
 my @lowhigh = (0,0);
 my %cycle;
@@ -80,26 +73,19 @@ L: while (1)
         my ($p,$n,$src) = @$sig;
         $lowhigh[$p]++;
 
-        next unless exists $t->{$n};
-        next unless exists $t->{$n}->{type};
+        next unless exists $t->{$n} && exists $t->{$n}->{type};
 
         my $m = $t->{$n};
         if ($m->{type} eq '')
         {
-            for my $d (@{$m->{dst}})
-            {
-                push(@q, [$p, $d, $n]);
-            }
+            push(@q, map { [$p, $_, $n] } @{$m->{dst}});
         }
         elsif ($m->{type} eq '%')
         {
             if ($p == 0)
             {
                 $t->{$n}->{st} = 1 - $m->{st};
-                for my $d (@{$m->{dst}})
-                {
-                    push(@q, [$t->{$n}->{st}, $d, $n]);
-                }
+                push(@q, map { [$t->{$n}->{st}, $_, $n] } @{$m->{dst}});
             }
         }
         elsif ($m->{type} eq '&')
@@ -107,22 +93,16 @@ L: while (1)
             $t->{$n}->{mem}->{$src} = $p;
             if (all { $_ == 1 } values %{$t->{$n}->{mem}})
             {
-                for my $d (@{$m->{dst}})
-                {
-                    push(@q, [0, $d, $n]);
-                }
+                push(@q, map { [0, $_, $n] } @{$m->{dst}});
             }
             else
             {
-                for my $d (@{$m->{dst}})
-                {
-                    push(@q, [1, $d, $n]);
-                }
+                push(@q, map { [1, $_, $n] } @{$m->{dst}});
 
                 if (exists $tr{$n})
                 {
                     $cycle{$n} = $i unless exists $cycle{$n};
-                    if (scalar(%tr) == scalar(%cycle))
+                    if (all { exists $cycle{$_} } keys %tr)
                     {
                         my @cycled = grep { exists $cycle{$_} && $cycle{$_} > 0 } keys %tr;
                         printf "Stage 2: LCM(%s) = LCM(%s) = %d\n",
@@ -132,9 +112,7 @@ L: while (1)
                         last L;
                     }
                 }
-
             }
         }
-
     }
 }
