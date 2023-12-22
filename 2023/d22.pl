@@ -30,55 +30,42 @@ for (@f)
         {
             for my $z ($a[2]..$a[5])
             {
-                $t->{$x,$y,$z} = $i; # chr(ord('A')+$i);
+                $t->{$x,$y,$z} = $i;
             }
         }
     }
-#    print Dumper $t;
     $i++;
 }
 
 my %under = ();
 my %supports = ();
-my %canbedisintegrated = ();
 
-B: for my $i (sort { $bricks[$a]->[2] <=> $bricks[$b]->[2] } (0..$#bricks)) # sort by z?
+B: for my $i (sort { $bricks[$a]->[2] <=> $bricks[$b]->[2] } (0..$#bricks)) # sort by z from the bottom
 {
-
-    #print "checking $i\n";
     my @a = @{$bricks[$i]};
+
+    next B if $a[2] == 1; # bottom
+
     my $canfall = 1;
-
-    my $zz = min($a[2],$a[5]);
-    if ($zz == 1)
-    {
-#            print "canfall ($i) = 0 (bottom)\n";
-#            push(@newb, \@a);
-        next B;
-    }
-
-    C: for my $x ($a[0]..$a[3])
+    for my $x ($a[0]..$a[3])
     {
         for my $y ($a[1]..$a[4])
         {
             for my $z ($a[2]..$a[5])
             {
                 next unless exists $t->{$x,$y,$z-1};
-                next if $t->{$x,$y,$z-1} eq $i;
+                next if $t->{$x,$y,$z-1} eq $i; # vertical
 
                 $canfall = 0;
 
                 $under{$i}->{$t->{$x,$y,$z-1}} = 1;
                 $supports{$t->{$x,$y,$z-1}}->{$i} = 1;
-
-                # have to check all last C;
             }
         }
     }
 
     if ($canfall)
     {
-#        print "canfall ($i) = $canfall\n";
         for my $x ($a[0]..$a[3])
         {
             for my $y ($a[1]..$a[4])
@@ -86,29 +73,18 @@ B: for my $i (sort { $bricks[$a]->[2] <=> $bricks[$b]->[2] } (0..$#bricks)) # so
                 for my $z ($a[2]..$a[5])
                 {
                     delete $t->{$x,$y,$z};
+                    $t->{$x,$y,$z-1} = $i;
                 }
             }
+
         }
 
         $a[2]--;
         $a[5]--;
 
-        for my $x ($a[0]..$a[3])
-        {
-            for my $y ($a[1]..$a[4])
-            {
-                for my $z ($a[2]..$a[5])
-                {
-                    $t->{$x,$y,$z} = $i;
-                }
-            }
-        }
-
-
         $bricks[$i] = \@a;
         redo B;
     }
-
 }
 
 my %savesupports = %{ clone \%supports};
@@ -122,31 +98,27 @@ for my $ti (0..$#bricks)
     push(@q, $ti);
 
     my $c = 0;
-    while (1)
+    while (@q)
     {
         my $i = pop(@q);
-        last unless defined $i;
 
         for my $bi (keys %{$supports{$i}})
         {
-            print "$ti: $bi was supported by $i\n";
-
+            # print "$ti: $bi was supported by $i\n";
             delete $under{$bi}->{$i};
             delete $supports{$i}->{$bi};
-            if (scalar(keys %{$under{$bi}}) == 0)
+            unless (%{$under{$bi}})
             {
-                print "$ti: all supports removed for $bi\n";
+                # print "$ti: all supports removed for $bi\n";
                 push(@q, $bi);
                 $c++;
             }
         }
     }
-    $stage2+=$c;
-    print "RESULT($ti) = $c ($stage2)\n";
+
     $stage1++ if $c == 0;
-
+    $stage2 += $c;
 }
-
 
 printf "Stage 1: %s\n", $stage1;
 printf "Stage 2: %s\n", $stage2;
