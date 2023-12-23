@@ -13,15 +13,9 @@ $; = ',';
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
-
 my $x = 0;
 my $y = 0;
 my $t;
-
-my $startx  = 1;
-my $starty  = 0;
 
 for (@f)
 {
@@ -34,15 +28,13 @@ for (@f)
     $y++;
 }
 
-my $h = $y;
-my $w = length($f[0]);
-my $maxy = $h - 1;
-my $maxx = $w - 1;
+my ($h, $w) = ($y, length($f[0]));
+my ($maxy, $maxx) = ($h - 1, $w - 1);
 
-my $endx = $maxx-1;
-my $endy = $maxy;
+my ($startx, $starty)  = (1, 0);
+my ($endx, $endy) = ($maxx-1, $maxy);
 
-for my $stage(1..2)
+for my $stage (1..2)
 {
     my $edge = undef;
     my $succ = undef;
@@ -51,9 +43,10 @@ for my $stage(1..2)
 
     for my $x (0..$maxx)
     {
-        Y: for my $y (0..$maxy)
+        for my $y (0..$maxy)
         {
             next if $t->{$x,$y} eq '#';
+
             my @nexits = ();
             my $allexits = 0;
             for my $dy (-1..1)
@@ -80,10 +73,7 @@ for my $stage(1..2)
                 }
             }
 
-            if ($allexits > 2)
-            {
-                $exits->{$x,$y} = \@nexits;
-            }
+            $exits->{$x,$y} = \@nexits if $allexits > 2;
         }
     }
 
@@ -101,9 +91,9 @@ for my $stage(1..2)
             my $visited = undef;
             $visited->{$sxsy} = 1;
 
-
+            # walk between nodes
             my $i = 0;
-            while (1)
+            W: while (1)
             {
                 $visited->{$x,$y} = 1;
                 $i++;
@@ -117,14 +107,12 @@ for my $stage(1..2)
                     last;
                 }
 
-                my $moved = 0;
-                Y: for my $dy (-1..1)
+                for my $dy (-1..1)
                 {
                     for my $dx (-1..1)
                     {
                         next unless abs($dx) + abs($dy) == 1;
-                        my $nx = $x + $dx;
-                        my $ny = $y + $dy;
+                        my ($nx, $ny) = ($x + $dx, $y + $dy);
                         next unless exists $t->{$nx,$ny};
                         next if $t->{$nx,$ny} eq '#';
 
@@ -137,21 +125,18 @@ for my $stage(1..2)
                         }
 
                         next if exists $visited->{$nx,$ny};
-                        $x = $nx;
-                        $y = $ny;
-                        $moved = 1;
-                        last Y; # only 1 way from non-node
+                        ($x, $y) = ($nx, $ny);
+                        next W; # only 1 way from non-node
                     }
                 }
 
-                last unless $moved;
+                last;
             }
         }
 
     }
 
     my @q = ();
-    my $end = "$endx,$endy";
     my $visited = undef;
 
     push(@q, ["$startx,$starty",$visited,0,0]); ## ,["$startx,$starty"]]);
@@ -159,13 +144,11 @@ for my $stage(1..2)
     my $i = 0;
     while (@q)
     {
-        my $ee = pop(@q);
-
-        my ($vx,$v,$lvl,$fwd,$p) = @$ee;
+        my ($vx,$v,$lvl,$fwd,$p) = @{pop(@q)};
 
         $v->{$vx} = 1;
 
-        if ($vx eq $end)
+        if ($vx eq "$endx,$endy")
         {
             printf("%20d: (max=%d)\n", $i, max($fwd,$mmm)) if $fwd > $mmm || $i % 10_000 == 0;
             $mmm = max($fwd,$mmm);
@@ -173,14 +156,9 @@ for my $stage(1..2)
             #printf "!!!!!! (max=$mmm) $fwd (%s)\n", join(" ",@$p);
         }
 
-        for my $s (@{$succ->{$vx}})
+        for my $s (grep { !exists $v->{$_} } @{$succ->{$vx}})
         {
-            next if exists $v->{$s};
-
-    ##        $p = clone $p;
-    ##        push(@$p, $s);
-
-            push(@q, [$s, clone($v), $lvl+1,$fwd + $edge->{$vx,$s}]); ## , $p]);
+            push(@q, [$s, clone($v), $lvl+1, $fwd + $edge->{$vx,$s}]); ## , $p]);
         }
     }
 
