@@ -18,24 +18,24 @@ my $stage2 = 0;
 
 sub issafe($r)
 {
-    my $rr = clone $r;
-    my $inc = 0;
-    my $dec = 0;
+    my $n = 1;
+    my $ord = 0;
 
-    my $p = shift @$rr;
-    while (my $i = shift @$rr)
+    my $p = $r->[0];
+    while (my $i = $r->[$n])
     {
         return 0 if abs($p - $i) < 1 || abs($p - $i) > 3;
-        $inc++ if $i > $p;
-        $dec++ if $i < $p;
-        return 0 if $inc && $dec;
+
+        $ord += $i <=> $p;
+        return 0 if abs($ord) != $n;
+
         $p = $i;
+        $n++;
     }
 
     return 1;
 }
 
-my $safe = 0;
 F: for (@f)
 {
     my @r = split/\s+/;
@@ -47,7 +47,7 @@ F: for (@f)
         next;
     }
 
-    for my $i (0..scalar @r)
+    for my $i (0..$#r)
     {
         my @rr = @r;
         splice(@rr, $i, 1);
