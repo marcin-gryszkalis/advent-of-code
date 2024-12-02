@@ -21,10 +21,10 @@ sub issafe($r)
     my $n = 1;
     my $ord = 0;
 
-    my $p = $r->[0];
-    while (my $i = $r->[$n])
+    for my $t (slide { [$a, $b] } @$r)
     {
-        return 0 if abs($p - $i) < 1 || abs($p - $i) > 3;
+        my ($p, $i) = @$t;
+        return 0 if $p == $i || abs($p - $i) > 3;
 
         $ord += $i <=> $p;
         return 0 if abs($ord) != $n;
@@ -36,7 +36,7 @@ sub issafe($r)
     return 1;
 }
 
-F: for (@f)
+for (@f)
 {
     my @r = split/\s+/;
 
@@ -54,7 +54,7 @@ F: for (@f)
         if (issafe(\@rr))
         {
             $stage2++;
-            next F;
+            last;
         }
     }
 }
