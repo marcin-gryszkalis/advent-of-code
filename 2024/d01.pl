@@ -11,8 +11,7 @@ use POSIX qw/ceil floor/;
 use Clone qw/clone/;
 $; = ',';
 
-$_ = read_file(\*STDIN, chomp => 1);
-my @l = /(\d+)/g;
+my @l = split /\s+/, read_file(\*STDIN, chomp => 1);
 
 my @a = sort { $a <=> $b } pairkeys @l;
 my @b = sort { $a <=> $b } pairvalues @l;
