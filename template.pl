@@ -4,7 +4,7 @@ use strict;
 use feature qw/state signatures say multidimensional/;
 use File::Slurp;
 use Data::Dumper;
-use List::Util qw/min max first sum sum0 product all any uniq head tail reduce pairs pairmap pairkeys pairvalues zip mesh/;
+use List::Util qw/min max first sum sum0 product all any uniq head tail reduce pairs pairmap pairgrep pairfirst pairkeys pairvalues zip mesh/;
 use List::MoreUtils qw/firstidx frequency mode pairwise slide minmax minmaxstr/;
 # use Algorithm::Combinatorics qw/combinations permutations variations/;
 use POSIX qw/ceil floor/;
