@@ -20,53 +20,22 @@ my $rules;
 my @updates;
 for (@f)
 {
-    $rules->{$1}->{$2} = 1 if /(\d+)\|(\d+)/;
+    $rules->{$1,$2} = 1 if /(\d+)\|(\d+)/;
     push(@updates, $_) if /,/;
-}
-
-U: for my $u (@updates)
-{
-    my @pages = split/,/, $u;
-    for my $i (0..$#pages-1)
-    {
-        for my $j ($i+1..$#pages)
-        {
-            my $p = $pages[$i];
-            my $q = $pages[$j];
-            next U if exists $rules->{$q}->{$p};
-        }
-    }
-
-    $stage1 += $pages[$#pages/2];
 }
 
 for my $u (@updates)
 {
-    my @pages = split/,/, $u;
-    my $broken = 0;
-    while (1)
+    my @pages = split /,/, $u;
+    my @fixed = sort { exists $rules->{$a,$b} ? -1 : 1 } @pages;
+    if ($u eq join(",", @fixed))
     {
-        my $swapped = 0;
-        for my $i (0..$#pages-1)
-        {
-            for my $j ($i+1..$#pages)
-            {
-                my $p = $pages[$i];
-                my $q = $pages[$j];
-                if (exists $rules->{$q}->{$p})
-                {
-                    $broken = 1;
-                    splice(@pages, $j, 0, splice(@pages, $i, 1));
-                    $swapped = 1;
-                }
-
-            }
-        }
-
-        last unless $swapped;
+        $stage1 += $pages[$#pages/2];
     }
-
-    $stage2 += $pages[$#pages/2] if $broken;
+    else
+    {
+        $stage2 += $fixed[$#fixed/2];
+    }
 }
 
 say "Stage 1: ", $stage1;
