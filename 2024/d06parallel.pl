@@ -10,16 +10,9 @@ use List::MoreUtils qw/firstidx frequency mode pairwise slide minmax minmaxstr/;
 use POSIX qw/ceil floor/;
 use Clone qw/clone/;
 use MCE::Map;
-    # max_workers => 4,                # Default 'auto'
-    # chunk_size => 100,               # Default 'auto'
-    # tmp_dir => "/path/to/app/tmp",   # $MCE::Signal::tmp_dir
-    # freeze => \&encode_sereal,       # \&Storable::freeze
-    # thaw => \&decode_sereal,         # \&Storable::thaw
-    # init_relay => 0,                 # Default undef; MCE 1.882+
-    # use_threads => 0,                # Default undef; MCE 1.882+
 $; = ',';
 
-my @dirs = ( [0,-1], [1,0], [0, 1], [-1, 0] );
+my @dirs = ( [0, -1], [1, 0], [0, 1], [-1, 0] );
 
 my @f = read_file(\*STDIN, chomp => 1);
 
