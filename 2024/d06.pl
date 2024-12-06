@@ -20,7 +20,7 @@ my $stage2 = 0;
 
 my $x = 0;
 my $y = 0;
-my $m = {};
+my $t;
 my $startx;
 my $starty;
 for (@f)
@@ -28,11 +28,8 @@ for (@f)
     $x = 0;
     for my $v (split//)
     {
-        $m->{$x,$y} = $v;
-        if ($v eq '^')
-        {
-            ($startx, $starty)  = ($x, $y);
-        }
+        $t->{$x,$y} = $v;
+        ($startx, $starty)  = ($x, $y) if $v eq '^';
         $x++;
     }
     $y++;
@@ -43,11 +40,9 @@ my ($maxy, $maxx) = ($h - 1, $w - 1);
 
 ($x, $y) = ($startx, $starty);
 my $dir = 0;
-my $t = clone $m;
 my $xed;
 while (1)
 {
-    $t->{$x,$y} = 'X';
     $xed->{$x,$y} = 1;
 
     my ($nx, $ny) = ($x + $dirs[$dir]->[0], $y + $dirs[$dir]->[1]);
@@ -58,39 +53,34 @@ while (1)
         redo;
     }
     ($x, $y) = ($nx, $ny);
-
 }
 
-$stage1 = grep { $_ eq 'X' } values %$t;
-
+$stage1 = keys %$xed;
 
 for my $ox (0..$maxx)
 {
     Y: for my $oy (0..$maxy)
     {
         next unless exists $xed->{$ox,$oy};
-
-        next if $m->{$ox,$oy} eq '^' || $m->{$ox,$oy} eq '#';
-        my $t = clone $m;
-        $t->{$ox,$oy} = '#';
+        next if $t->{$ox,$oy} eq '^' || $t->{$ox,$oy} eq '#';
 
         ($x, $y) = ($startx, $starty);
         my $dir = 0;
+        my $detect = undef;
         while (1)
         {
-            if ($t->{$x,$y} =~ /$dir/) # loop
+            if (exists $detect->{$x,$y,$dir}) # loop
             {
                 $stage2++;
                 last;
             }
 
-            $t->{$x,$y} .= $dir;
+            $detect->{$x,$y,$dir} = 1;
 
             my ($nx, $ny) = ($x + $dirs[$dir]->[0], $y + $dirs[$dir]->[1]);
 
             last if $nx < 0 || $nx > $maxx || $ny < 0 || $ny > $maxy;
-
-            if ($t->{$nx,$ny} eq '#')
+            if ($t->{$nx,$ny} eq '#' || ($nx == $ox && $ny == $oy))
             {
                 $dir = ($dir + 1) % 4;
                 redo;
@@ -99,8 +89,6 @@ for my $ox (0..$maxx)
         }
     }
 }
-
-
 
 say "Stage 1: ", $stage1;
 say "Stage 2: ", $stage2;
