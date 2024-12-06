@@ -9,8 +9,14 @@ use List::MoreUtils qw/firstidx frequency mode pairwise slide minmax minmaxstr/;
 # use Algorithm::Combinatorics qw/combinations permutations variations/;
 use POSIX qw/ceil floor/;
 use Clone qw/clone/;
-use Parallel::ForkControl;
-
+use MCE::Map;
+    # max_workers => 4,                # Default 'auto'
+    # chunk_size => 100,               # Default 'auto'
+    # tmp_dir => "/path/to/app/tmp",   # $MCE::Signal::tmp_dir
+    # freeze => \&encode_sereal,       # \&Storable::freeze
+    # thaw => \&decode_sereal,         # \&Storable::thaw
+    # init_relay => 0,                 # Default undef; MCE 1.882+
+    # use_threads => 0,                # Default undef; MCE 1.882+
 $; = ',';
 
 my @dirs = ( [0,-1], [1,0], [0, 1], [-1, 0] );
@@ -59,23 +65,7 @@ while (1)
 
 $stage1 = keys %$xed;
 
-my $pool = new Parallel::ForkControl(
-    WatchCount              => 1,
-    MaxKids                 => 8,
-    Accounting              => 1,
-    Code                    => \&loopcheck
-);
-
-for (keys %$xed)
-{
-    $pool->run(split/,/);
-}
-$pool->waitforkids();
-my $res = $pool->get_results();
-for my $r (values %$res)
-{
-    $stage2 += $r->{return};
-}
+$stage2 = sum mce_map { loopcheck(split/,/) } keys %$xed;
 
 sub loopcheck($ox, $oy)
 {
