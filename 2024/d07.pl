@@ -28,8 +28,7 @@ for my $stage (1..2)
 
     F: for (@f)
     {
-        my @vals = split/:?\s+/;
-        my $sum = shift @vals;
+        my ($sum, @vals) = split/:?\s+/;
 
         my $i = variations_with_repetition(\@ops, $#vals);
         C: while (my $c = $i->next)
