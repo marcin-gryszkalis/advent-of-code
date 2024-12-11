@@ -14,33 +14,38 @@ $; = ',';
 my @f = split/\s+/, read_file(\*STDIN, chomp => 1);
 
 my $stage1 = 0;
-my $stage2 = 0;
-my @n;
+my %h;
+
+$h{$_}++ for @f;
 
 for my $step (1..75)
 {
-    @n = ();
-    for (@f)
+    my $g = clone \%h;
+    for (keys %$g)
     {
         my $l = length($_);
+        my $c = $g->{$_};
+
+        $h{$_} -= $c;
+
         if ($_ == 0)
         {
-            push(@n, 1)
+            $h{1} += $c;
         }
         elsif ($l % 2 == 0)
         {
-            push(@n, substr($_, 0, $l/2));
-            push(@n, int substr($_, $l/2));
+            $h{substr($_, 0, $l/2)} += $c;
+            $h{int substr($_, $l/2)} += $c;
         }
         else
         {
-            push(@n, $_ * 2024);
+            $h{$_ * 2024} += $c;
         }
     }
 
-    say "$step ", scalar @n;
-    @f = @n;
+    $stage1 = sum values %h if $step == 25;
 }
 
-say "Stage 1: ", scalar @n;
-say "Stage 2: ", $stage2;
+
+say "Stage 1: ", $stage1;
+say "Stage 2: ", sum values %h;
