@@ -36,7 +36,7 @@ my $antinodes2;
 for my $frq (keys %locations)
 {
         my $i = combinations($locations{$frq}, 2);
-        C: while (my $c = $i->next)
+        while (my $c = $i->next)
         {
             my $dx = $c->[0]->{x} - $c->[1]->{x};
             my $dy = $c->[0]->{y} - $c->[1]->{y};
@@ -52,22 +52,20 @@ for my $frq (keys %locations)
 
             $x = $c->[0]->{x};
             $y = $c->[0]->{y};
-            while (1)
+            while ($x >= 0 && $x <= $maxx && $y >= 0 && $y <= $maxy)
             {
                 $antinodes2->{$x,$y} = 1;
                 $x += $dx;
                 $y += $dy;
-                last if $x < 0 || $x > $maxx || $y < 0 || $y > $maxy;
             }
 
             $x = $c->[1]->{x};
             $y = $c->[1]->{y};
-            while (1)
+            while ($x >= 0 && $x <= $maxx && $y >= 0 && $y <= $maxy)
             {
                 $antinodes2->{$x,$y} = 1;
                 $x -= $dx;
                 $y -= $dy;
-                last if $x < 0 || $x > $maxx || $y < 0 || $y > $maxy;
             }
 
         }
