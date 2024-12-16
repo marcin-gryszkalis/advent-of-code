@@ -21,20 +21,17 @@ my @op = (
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $stage1 = 0;
-my $stage2 = 0;
-
 my $t;
 
-my ($x, $y) = (0, 0);
 my ($startx, $starty) = (0, 0);
 my ($endx, $endy) = (0, 0);
 my $startdir = 0;
 
+my $y = 0;
 for (@f)
 {
     last if /^$/;
-    $x = 0;
+    my $x = 0;
     for my $v (split//)
     {
         ($startx, $starty) = ($x, $y) if $v eq 'S';
@@ -44,8 +41,6 @@ for (@f)
     }
     $y++;
 }
-
-my @path = map { split // } grep { /[<>v^]/ } @f;
 
 my ($h, $w) = ($y, length($f[0]));
 my ($maxy, $maxx) = ($h - 1, $w - 1);
@@ -58,7 +53,7 @@ my $q = Array::Heap::PriorityQueue::Numeric->new();
 my $dist;
 $dist->{$startx,$starty,$startdir} = 0;
 $q->add([$startx, $starty, $startdir, 0], 0);
-Q: while (my $e = $q->get())
+while (my $e = $q->get())
 {
     my ($x, $y, $dir, $cost) = @$e;
     my $ndir = $dir;
@@ -70,7 +65,7 @@ Q: while (my $e = $q->get())
 
         if ($v eq 'E')
         {
-            if ($cost + 1 <= $bestcost)
+            if ($cost + 1 < $bestcost)
             {
                 $bestcost = $cost + 1;
                 $bestdir = $ndir;
@@ -91,7 +86,6 @@ Q: while (my $e = $q->get())
 
         $ndir = ($ndir + 1) % 4;
     }
-
 }
 
 my %good;
@@ -106,7 +100,6 @@ Q: while (my $e = shift(@bt))
     my $ndir = 0;
     for my $i (1..4)
     {
-        my $revdir = ($ndir + 2) % 4;
         my $d = $op[$ndir];
         my ($nx,$ny) = ($x + $d->[0], $y + $d->[1]);
         my $v = $t->{$nx,$ny};
@@ -114,7 +107,7 @@ Q: while (my $e = shift(@bt))
         if ($v eq 'S')
         {
             $good{$nx,$ny} = 1;
-            last Q;
+            next;
         }
 
         if ($v eq '.')
@@ -137,7 +130,6 @@ Q: while (my $e = shift(@bt))
 
 }
 
-
 for my $py (0..$maxy)
 {
     for my $px (0..$maxx)
@@ -147,7 +139,5 @@ for my $py (0..$maxy)
     print "\n";
 }
 
-
 say "Stage 1: ", $bestcost;
 say "Stage 2: ", scalar keys %good;
-
