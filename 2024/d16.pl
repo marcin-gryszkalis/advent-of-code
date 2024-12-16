@@ -28,6 +28,7 @@ my $t;
 
 my ($x, $y) = (0, 0);
 my ($startx, $starty) = (0, 0);
+my ($endx, $endy) = (0, 0);
 my $startdir = 0;
 
 for (@f)
@@ -36,12 +37,8 @@ for (@f)
     $x = 0;
     for my $v (split//)
     {
-        if ($v eq 'S')
-        {
-            $startx = $x;
-            $starty = $y;
-        }
-
+        ($startx, $starty) = ($x, $y) if $v eq 'S';
+        ($endx, $endy) = ($x, $y) if $v eq 'E';
         $t->{$x,$y} = $v;
         $x++;
     }
@@ -53,7 +50,8 @@ my @path = map { split // } grep { /[<>v^]/ } @f;
 my ($h, $w) = ($y, length($f[0]));
 my ($maxy, $maxx) = ($h - 1, $w - 1);
 
-my @pathcosts = ();
+my $bestcost = 1_000_000_000;
+my $bestdir = -1;
 
 my $q = Array::Heap::PriorityQueue::Numeric->new();
 
@@ -63,7 +61,6 @@ $q->add([$startx, $starty, $startdir, 0], 0);
 Q: while (my $e = $q->get())
 {
     my ($x, $y, $dir, $cost) = @$e;
-    # say "$x, $y ($dir) -- $cost";
     my $ndir = $dir;
     for my $i (1..4)
     {
@@ -73,8 +70,11 @@ Q: while (my $e = $q->get())
 
         if ($v eq 'E')
         {
-            say "E: ", $cost + 1;
-            push(@pathcosts, $cost + 1);
+            if ($cost + 1 <= $bestcost)
+            {
+                $bestcost = $cost + 1;
+                $bestdir = $ndir;
+            }
         }
 
         if ($v eq '.')
@@ -82,15 +82,11 @@ Q: while (my $e = $q->get())
             my $ncost = $cost + ($dir == $ndir ? 1 : 1001);
             $dist->{$nx,$ny,$ndir} = 1_000_000_000 unless exists $dist->{$nx,$ny,$ndir};
 
-            if ($ncost < $dist->{$nx,$ny,$ndir})
+            if ($ncost <= $dist->{$nx,$ny,$ndir})
             {
                 $dist->{$nx,$ny,$ndir} = $ncost;
                 $q->add([$nx, $ny, $ndir, $ncost], $ncost);
             }
-        }
-        else # wall or visited or S
-        {
-
         }
 
         $ndir = ($ndir + 1) % 4;
@@ -98,18 +94,60 @@ Q: while (my $e = $q->get())
 
 }
 
+my %good;
+my @bt = ();
+
+push(@bt, [$endx, $endy, $bestdir, $bestcost]);
+Q: while (my $e = shift(@bt))
+{
+    my ($x, $y, $dir, $cost) = @$e;
+    $good{$x,$y} = 1;
+
+    my $ndir = 0;
+    for my $i (1..4)
+    {
+        my $revdir = ($ndir + 2) % 4;
+        my $d = $op[$ndir];
+        my ($nx,$ny) = ($x + $d->[0], $y + $d->[1]);
+        my $v = $t->{$nx,$ny};
+
+        if ($v eq 'S')
+        {
+            $good{$nx,$ny} = 1;
+            last Q;
+        }
+
+        if ($v eq '.')
+        {
+            for my $fdir (0..3)
+            {
+                my $ncost = $dist->{$nx,$ny,$fdir};
+                next unless defined $ncost;
+
+                my $diff = $cost - $ncost;
+                next if $dir == $fdir && $diff != 1;
+                next if $dir != $fdir && $diff != 1001;
+
+                push(@bt, [$nx, $ny, $fdir, $ncost]);
+            }
+        }
+
+        $ndir = ($ndir + 1) % 4;
+    }
+
+}
+
+
 for my $py (0..$maxy)
 {
     for my $px (0..$maxx)
     {
-        print $t->{$px,$py};
+        print exists $good{$px,$py} ? 'O' : $t->{$px,$py};
     }
     print "\n";
 }
 
 
-say "Stage 1: ", min(@pathcosts);
-say "Stage 2: ", $stage2;
+say "Stage 1: ", $bestcost;
+say "Stage 2: ", scalar keys %good;
 
-# too high 111488
-# 111480 ?
