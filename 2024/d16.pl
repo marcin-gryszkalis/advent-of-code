@@ -53,15 +53,17 @@ my @path = map { split // } grep { /[<>v^]/ } @f;
 my ($h, $w) = ($y, length($f[0]));
 my ($maxy, $maxx) = ($h - 1, $w - 1);
 
+my @pathcosts = ();
 
 my $q = Array::Heap::PriorityQueue::Numeric->new();
 
+my $dist;
+$dist->{$startx,$starty,$startdir} = 0;
 $q->add([$startx, $starty, $startdir, 0], 0);
-
 Q: while (my $e = $q->get())
 {
-    my ($x, $y, $dir, $score) = @$e;
-    say "$x, $y ($dir) -- $score";
+    my ($x, $y, $dir, $cost) = @$e;
+    # say "$x, $y ($dir) -- $cost";
     my $ndir = $dir;
     for my $i (1..4)
     {
@@ -71,14 +73,20 @@ Q: while (my $e = $q->get())
 
         if ($v eq 'E')
         {
-            $stage1 = $score + 1;
-            last Q;
+            say "E: ", $cost + 1;
+            push(@pathcosts, $cost + 1);
         }
 
         if ($v eq '.')
         {
-            my $cost = $score + ($dir == $ndir ? 1 : 1001);
-            $q->add([$nx, $ny, $ndir, $cost], $cost);
+            my $ncost = $cost + ($dir == $ndir ? 1 : 1001);
+            $dist->{$nx,$ny,$ndir} = 1_000_000_000 unless exists $dist->{$nx,$ny,$ndir};
+
+            if ($ncost < $dist->{$nx,$ny,$ndir})
+            {
+                $dist->{$nx,$ny,$ndir} = $ncost;
+                $q->add([$nx, $ny, $ndir, $ncost], $ncost);
+            }
         }
         else # wall or visited or S
         {
@@ -88,9 +96,7 @@ Q: while (my $e = $q->get())
         $ndir = ($ndir + 1) % 4;
     }
 
-    $t->{$x,$y} = 'X';
 }
-
 
 for my $py (0..$maxy)
 {
@@ -102,7 +108,8 @@ for my $py (0..$maxy)
 }
 
 
-say "Stage 1: ", $stage1;
+say "Stage 1: ", min(@pathcosts);
 say "Stage 2: ", $stage2;
 
 # too high 111488
+# 111480 ?
