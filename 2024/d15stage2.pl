@@ -95,7 +95,7 @@ M: for my $m (@path)
     $x += $dx;
     $y += $dy;
 
-    if (1) # Animation
+    if (0) # Animation
     {
         for my $py (0..$maxy)
         {
@@ -113,7 +113,6 @@ for my $py (0..$maxy)
 {
     for my $px (0..$maxx)
     {
-#        $stage1 += (100 * $py + $px) if $t->{$px,$py} eq 'O';
         $stage2 += (100 * $py + $px) if $t->{$px,$py} eq '[';
         if ($px == $x && $py == $y) { print "@"; next }
         print $t->{$px,$py};
@@ -122,5 +121,4 @@ for my $py (0..$maxy)
     print "\n";
 }
 
-#say "Stage 1: ", $stage1;
 say "Stage 2: ", $stage2;
