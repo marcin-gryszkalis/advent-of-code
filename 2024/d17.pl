@@ -9,6 +9,8 @@ use List::MoreUtils qw/firstidx frequency mode pairwise slide minmax minmaxstr/;
 # use Algorithm::Combinatorics qw/combinations permutations variations/;
 use POSIX qw/ceil floor/;
 use Clone qw/clone/;
+use MCE::Map;
+no warnings 'portable';
 $; = ',';
 
 my $f = read_file(\*STDIN, chomp => 1);
@@ -27,13 +29,12 @@ sub combo($a)
     die;
 }
 
-my $stage1 = 0;
-my $stage2 = 0;
+sub bin2dec($b) { oct("0b$b") }
 
 sub process
 {
     ($A,$B,$C) = @_;
-    my @out;
+    my @out = ();
 
     my $ip = 0;
     while (1)
@@ -88,8 +89,108 @@ sub process
         $ip += 2;
     }
 
-    return join(",", @out);
+    return @out;
 }
 
-say "Stage 1: ", process($sA, $sB, $sC);
-say "Stage 2: ", $stage2;
+say "Stage 1: ", join(",", process($sA, $sB, $sC));
+
+my $l = $#code;
+my $cc = join(",", @code);
+
+my $treshold_best = 25;
+my $crossover_pairs = 20;
+my $population = 10000;
+my @crowd;
+
+for my $i (0..$population-1)
+{
+    my $k = '';
+    for my $d (0..$l)
+    {
+        $k .= sprintf("%03b", int(rand(8)));
+    }
+    push(@crowd, $k);
+}
+
+sub mutate($s)
+{
+    my $n = int rand(4); # number of bits to mutate
+    for my $i (1..$n)
+    {
+        my $pos = int rand(scalar(@code) * 3);
+        substr($s, $pos, 1, int rand(2))
+    }
+
+    return $s;
+}
+
+sub crossover($s, $t)
+{
+    my $pos = int rand(scalar(@code) * 3);
+    my $s1 = substr($s,0,$pos).substr($t,$pos);
+    my $t1 = substr($t,0,$pos).substr($s,$pos);
+    return ($s1,$t1);
+}
+
+
+my $best = "9" x $l;
+for my $gen (0..1000)
+{
+    my %results = mce_map { my @r = process(bin2dec($_), $sB, $sC); $_ => \@r } @crowd;
+    my %scores = ();
+    for my $sk (keys %results)
+    {
+        my $diff = 0;
+        my @r = @{$results{$sk}};
+        if ($#r != $l)
+        {
+            $diff = 10000000;
+        }
+        else
+        {
+            for my $d (0..$l)
+            {
+                $diff += abs($code[$d] - $r[$d]);
+            }
+        }
+
+        if ($diff == 0)
+        {
+            my $a = bin2dec($sk);
+            if ($a < $best)
+            {
+                $best = $a;
+                say "############################### BEST $a -- @r";
+                sleep(1);
+            }
+        }
+
+        $scores{$sk} = $diff;
+    }
+
+    my @best = head($treshold_best, sort { $scores{$a} <=> $scores{$b} } keys %scores);
+
+    @crowd = ();
+    for my $i (1..$crossover_pairs)
+    {
+        my $e1 = int rand scalar @best;
+        my $e2 = int rand scalar @best;
+        my ($a,$b) = crossover($best[$e1], $best[$e2]);
+        push(@crowd, $a, $b);
+    }
+
+    while (scalar @crowd < $population)
+    {
+        my $e1 = int rand scalar @best;
+        push(@crowd, mutate($best[$e1]));
+    }
+
+    for my $b (head(3, @best))
+    {
+        my $r = join(",", process(bin2dec($b),$sB,$sC));
+        say "gen $gen: $b = $scores{$b} -- $r (best = $best)";
+    }
+
+    print "\n";
+}
+
