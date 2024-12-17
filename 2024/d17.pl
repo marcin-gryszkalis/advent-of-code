@@ -13,10 +13,11 @@ $; = ',';
 
 my $f = read_file(\*STDIN, chomp => 1);
 my @code = $f =~ m/(\d+)/g;
-my $A = shift @code;
-my $B = shift @code;
-my $C = shift @code;
+my $sA = shift @code;
+my $sB = shift @code;
+my $sC = shift @code;
 
+my ($A,$B,$C);
 sub combo($a)
 {
     return $a if $a < 4;
@@ -29,61 +30,66 @@ sub combo($a)
 my $stage1 = 0;
 my $stage2 = 0;
 
-my @out;
-
-my $ip = 0;
-while (1)
+sub process
 {
-    my $cmd = $code[$ip];
-    last unless defined $cmd;
+    ($A,$B,$C) = @_;
+    my @out;
 
-    my $op = $code[$ip+1];
+    my $ip = 0;
+    while (1)
+    {
+        my $cmd = $code[$ip];
+        last unless defined $cmd;
 
-    say("$ip: $A $B $C -- ", join(",", @out));
-    if ($cmd == 0) # adv
-    {
-        $A = int($A / (2 ** combo($op)));
-    }
-    elsif ($cmd == 1) # bxl
-    {
-        $B = $B ^ $op;
-    }
-    elsif ($cmd == 2) # bst
-    {
-        $B = combo($op) % 8;
-    }
-    elsif ($cmd == 3) # jnz
-    {
-        if ($A != 0)
+        my $op = $code[$ip+1];
+
+    #    say("$ip: $A $B $C -- ", join(",", @out));
+        if ($cmd == 0) # adv
         {
-            $ip = $op;
-            next;
+            $A = int($A / (2 ** combo($op)));
         }
-    }
-    elsif ($cmd == 4) # bxc
-    {
-        $B = $B ^ $C;
-    }
-    elsif ($cmd == 5) # out
-    {
-        push(@out, combo($op) % 8)
-    }
-    elsif ($cmd == 6) # bdv
-    {
-        $B = int($A / (2 ** combo($op)));
-    }
-    elsif ($cmd == 7) # cdv
-    {
-        $C = int($A / (2 ** combo($op)));
-    }
-    else
-    {
-        die;
+        elsif ($cmd == 1) # bxl
+        {
+            $B = $B ^ $op;
+        }
+        elsif ($cmd == 2) # bst
+        {
+            $B = combo($op) % 8;
+        }
+        elsif ($cmd == 3) # jnz
+        {
+            if ($A != 0)
+            {
+                $ip = $op;
+                next;
+            }
+        }
+        elsif ($cmd == 4) # bxc
+        {
+            $B = $B ^ $C;
+        }
+        elsif ($cmd == 5) # out
+        {
+            push(@out, combo($op) % 8)
+        }
+        elsif ($cmd == 6) # bdv
+        {
+            $B = int($A / (2 ** combo($op)));
+        }
+        elsif ($cmd == 7) # cdv
+        {
+            $C = int($A / (2 ** combo($op)));
+        }
+        else
+        {
+            die;
+        }
+
+        $ip += 2;
     }
 
-    $ip += 2;
+    return join(",", @out);
 }
 
-$stage1 = join(",", @out);
-say "Stage 1: ", $stage1;
+say "Stage 1: ", process($sA, $sB, $sC);
 say "Stage 2: ", $stage2;
