@@ -23,12 +23,8 @@ my @op = (
 
 my @f = read_file(\*STDIN, chomp => 1);
 
-my $t;
-
 my ($startx, $starty) = (0, 0);
-my $startdir = 0;
-
-my ($maxy, $maxx) = (0,0);
+my ($maxy, $maxx) = (0, 0);
 for (@f)
 {
     my ($x,$y) = /(\d+)/g;
@@ -37,26 +33,16 @@ for (@f)
 }
 
 my ($endx, $endy) = ($maxy, $maxx);
-my $limit = $maxx == 6 ? 12 : 1024;
+my $limit = $maxx == 6 ? 12 : 1024; # hardocded from description
 
+my $t;
 my $i = 0;
 while (1)
 {
     $_ = shift @f;
     my ($x,$y) = /(\d+)/g;
-    $t->{$x,$y} = "#";
+    $t->{$x,$y} = 1;
     last if $i++ == $limit;
-}
-
-
-for my $py (0..$maxy)
-{
-    for my $px (0..$maxx)
-    {
-        $t->{$px,$py} = "." unless defined $t->{$px,$py};
-#         print $t->{$px,$py};
-    }
-#    print "\n";
 }
 
 my $fall = -1;
@@ -64,50 +50,31 @@ while (1)
 {
     my $bestcost = 1_000_000_000;
 
-    my $dist;
-    $dist->{$startx,$starty} = 0;
-
     my @q = ();
     my $vis = undef;
     push(@q, [$startx, $starty, 0]);
-
     Q: while (my $e = shift @q)
     {
         my ($x, $y, $cost) = @$e;
-
         next if $vis->{$x,$y};
+
         $vis->{$x,$y} = 1;
+        if ($x == $endx && $y == $endy)
+        {
+#            say "$fall $cost";
+            $bestcost = $cost;
+            $stage1 = $bestcost unless $stage1;
+            last;
+        }
 
         for my $i (0..3)
         {
             my $d = $op[$i];
             my ($nx,$ny) = ($x + $d->[0], $y + $d->[1]);
             next if $nx > $maxx || $nx < 0 || $ny > $maxy || $ny < 0;
-
-            my $v = $t->{$nx,$ny};
-
-            if ($nx == $endx && $ny == $endy)
-            {
-                if ($cost + 1 < $bestcost)
-                {
-                    $bestcost = $cost + 1;
-                    $stage1 = $bestcost unless $stage1;
-                    last Q;
-                }
-            }
-
-            if ($v eq '.')
-            {
-                my $ncost = $cost + 1;
-                $dist->{$nx,$ny} = 1_000_000_000 unless exists $dist->{$nx,$ny};
-
-                if ($ncost <= $dist->{$nx,$ny})
-                {
-                    $dist->{$nx,$ny} = $ncost;
-                    push(@q, [$nx, $ny, $ncost]);
-                }
-            }
-
+            next if $vis->{$nx,$ny};
+            next if $t->{$nx,$ny};
+            push(@q, [$nx, $ny, $cost + 1]);
         }
     }
 
@@ -121,7 +88,6 @@ while (1)
     last unless defined $fall;
     my ($x,$y) = $fall =~/(\d+)/g;
     $t->{$x,$y} = "#";
-
 }
 
 say "Stage 1: ", $stage1;
