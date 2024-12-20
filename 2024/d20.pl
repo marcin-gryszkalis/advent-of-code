@@ -11,6 +11,8 @@ use POSIX qw/ceil floor/;
 use Clone qw/clone/;
 $; = ',';
 
+my $GAIN_THRESHOLD = 100;
+
 my @op = (
     [1,0],  # >
     [0,1],  # v
@@ -27,19 +29,16 @@ my $t;
 
 my ($startx, $starty) = (0, 0);
 my ($endx, $endy) = (0, 0);
-my $startdir = 0;
 
 my $y = 0;
 for (@f)
 {
-    last if /^$/;
     my $x = 0;
     for my $v (split//)
     {
         ($startx, $starty) = ($x, $y) if $v eq 'S';
         ($endx, $endy) = ($x, $y) if $v eq 'E';
-        $t->{$x,$y} = $v;
-        $x++;
+        $t->{$x++,$y} = $v;
     }
     $y++;
 }
@@ -47,16 +46,16 @@ for (@f)
 my ($h, $w) = ($y, length($f[0]));
 my ($maxy, $maxx) = ($h - 1, $w - 1);
 
-my @q = ();
 my $dist;
+
+my @q = ();
 push(@q, [$startx,$starty,0]);
-#$dist->{$startx,$starty} = 0;
-$t->{$startx,$starty} = 'X';
 
 while (my $e = shift(@q))
 {
     my ($x,$y,$c) = @$e;
     $dist->{$x,$y} = $c;
+    $t->{$x,$y} = 'X';
 
     for my $o (@op)
     {
@@ -66,32 +65,43 @@ while (my $e = shift(@q))
         next if $t->{$nx,$ny} eq 'X';
 
         push(@q, [$nx, $ny, $c+1]);
-        $t->{$nx,$ny} = 'X';
     }
 }
 
-my %cheats;
-for my $y (1..$maxy-1)
+for my $stage (1..2)
 {
-    for my $x (1..$maxx-1)
+    my $cl = $stage == 1 ? 2 : 20;
+
+    my %cheats = ();
+    my %tested = ();
+    for my $y (1..$maxy-1)
     {
-        next unless $t->{$x,$y} eq '#';
-        if ($t->{$x-1,$y} eq 'X' && $t->{$x+1,$y} eq 'X')
+        for my $x (1..$maxx-1)
         {
-            $cheats{abs($dist->{$x-1,$y} - $dist->{$x+1,$y}) - 2}++;
-            #say "- $x,$y : ", abs($dist->{$x-1,$y} - $dist->{$x+1,$y});
-        }
-        if ($t->{$x,$y-1} eq 'X' && $t->{$x,$y+1} eq 'X')
-        {
-            $cheats{abs($dist->{$x,$y-1} - $dist->{$x,$y+1}) - 2}++;
-            #say "| $x,$y : ", abs($dist->{$x,$y-1} - $dist->{$x,$y+1});
+            next unless $t->{$x,$y} eq 'X';
+
+            for my $oy ($y-$cl..$y+$cl)
+            {
+                next if $oy <= 0 || $oy >= $maxy;
+
+                my $dy = abs($oy-$y);
+                for my $ox ($x-($cl-$dy)..$x+($cl-$dy))
+                {
+                    next if $ox <= 0 || $ox >= $maxx;
+                    next if $x == $ox && $y == $oy;
+
+                    next if $t->{$ox,$oy} ne 'X';
+                    next if exists $tested{$ox,$oy,$x,$y};
+
+                    my $dist = abs($dist->{$x,$y} - $dist->{$ox,$oy});
+                    my $distcheat = abs($x-$ox) + abs($y-$oy);
+
+                    $cheats{$dist - $distcheat}++;
+                    $tested{$x,$y,$ox,$oy} = 1;
+                }
+            }
         }
     }
+
+    say "Stage $stage: ", sum map { $cheats{$_} } grep { $_ >= $GAIN_THRESHOLD } keys %cheats;
 }
-
-#print Dumper \%cheats;
-
-$stage1 = sum map { $cheats{$_} } grep { $_ >= 100 } keys %cheats;
-
-say "Stage 1: ", $stage1;
-say "Stage 2: ", $stage2;
