@@ -19,6 +19,7 @@ my $t;
 my $d;
 my $circ;
 
+my $C = 0;
 for (@l)
 {
     for my $o (keys %$t)
@@ -29,14 +30,14 @@ for (@l)
         $d->{$_,$o} = $dist;
     }
 
-    $t->{$_} = 0;
-    $circ->{0}->{$_} = 1;
+    $t->{$_} = $C;
+    $circ->{$C}->{$_} = 1;
+    $C++;
 }
 
 my @sd = sort { $d->{$a} <=> $d->{$b} } keys %$d;
 
 my $L = scalar(keys %$t) < 100 ? 10 : 1000; # 10 for test case
-my $C = 0;
 my $l = 0;
 for my $dk (@sd)
 {
@@ -50,50 +51,26 @@ for my $dk (@sd)
 
     if ($t->{$xyz1} == $t->{$xyz2}) # same circuit number
     {
-        if ($t->{$xyz1} > 0)
-        {
-            say "$l: skip $xyz1 to $xyz2 (already conn)"; # same big circuit, skip
-            next;
-        }
-
-        # both are single, make new circuit and connect them
-        $C++;
-        say "$l: connect $xyz1 to $xyz2 (single = $C)";
-        $t->{$xyz1} = $t->{$xyz2} = $C;
-        $circ->{$C}->{$xyz1} = $circ->{$C}->{$xyz2} = 1;
-        delete $circ->{0}->{$xyz1};
-        delete $circ->{0}->{$xyz2};
+        say "$l: skip $xyz1 to $xyz2 (already conn)"; # same circuit, skip
+        next;
     }
     else
     {
         # connect
-        ($xyz1,$xyz2) = ($xyz2,$xyz1) if $t->{$xyz1} == 0; # swap
         my $c = $t->{$xyz1};
         my $kc = $t->{$xyz2};
-        if ($kc == 0)
+        say "$l: connect $xyz2 (all in $t->{$xyz2}) to $xyz1 ($t->{$xyz1})";
+        for my $k (keys %{$circ->{$kc}})
         {
-            say "$l: connect $xyz2 ($t->{$xyz2}) to $xyz1 ($t->{$xyz1})";
-            $circ->{$c}->{$xyz2} = 1;
-            $t->{$xyz2} = $c;
-            delete $circ->{0}->{$xyz2};
+            $circ->{$c}->{$k} = 1;
+            $t->{$k} = $c;
         }
-        else
-        {
-            say "$l: connect $xyz2 (all in $t->{$xyz2}) to $xyz1 ($t->{$xyz1})";
-            for my $k (keys %{$circ->{$kc}})
-            {
-                $circ->{$c}->{$k} = 1;
-                $t->{$k} = $c;
-            }
-            delete $circ->{$kc};
-        }
+        delete $circ->{$kc};
     }
 
-    if (scalar(keys %{$circ->{0}}) == 0 && scalar(keys %$circ) == 2) # 0 and other
+    if (keys %$circ == 1)
     {
-        my ($x1,$y1,$z1) = split/,/, $xyz1;
-        my ($x2,$y2,$z2) = split/,/, $xyz2;
-        $stage2 = $x1 * $x2;
+        $stage2 = (split(/,/, $xyz1))[0] * (split(/,/, $xyz2))[0];
         last;
     }
 }
